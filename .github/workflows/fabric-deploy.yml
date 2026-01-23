@@ -119,7 +119,7 @@ jobs:
   deploy-test:
     name: Deploy to Test
     runs-on: ubuntu-latest
-    needs: [static-analysis, deploy-dev]
+    needs: static-analysis
     if: github.event_name == 'workflow_dispatch' && inputs.deploy_to_test
     environment:
       name: test
