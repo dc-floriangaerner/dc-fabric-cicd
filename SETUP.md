@@ -114,18 +114,18 @@ $workspaceId = "<your-dev-workspace-id>"
 az rest --method get --url "https://api.fabric.microsoft.com/v1/workspaces/$workspaceId/items"
 ```
 
-### Upda7: Create Fabric Workspaces
+### Update parameter.yml
 
-Create three workspaces with the naming convention:
-
-- `[D] Fabric Blueprint` - Development
-- `[T] Fabric Blueprint` - Test
-- `[P] Fabric Blueprint` - Production
-
-**Important**: These names should match the values you set in GitHub Variables (`WORKSPACE_NAME_DEV`, `WORKSPACE_NAME_TEST`, `WORKSPACE_NAME_PROD`)
+```yaml
+find_replace:
+  # Replace this with actual Dev lakehouse_bronze ID
+  - find_value: "12345678-1234-1234-1234-123456789abc"
+    replace_value:
+      _ALL_: "$items.Lakehouse.lakehouse_bronze.id"
+    item_type: "Notebook"
 ```
 
-## Step 6: Create Fabric Workspaces
+## Step 7: Create Fabric Workspaces
 
 Create three workspaces with the naming convention:
 
@@ -133,7 +133,7 @@ Create three workspaces with the naming convention:
 - `[T] Fabric Blueprint` - Test
 - `[P] Fabric Blueprint` - Production
 
-**Important**: Match these names exactly in [.github/workflows/fabric-deploy.yml](.github/workflows/fabric-deploy.yml) if different.
+**Important**: These names should match the values you set in GitHub Variables (`WORKSPACE_NAME_DEV`, `WORKSPACE_NAME_TEST`, `WORKSPACE_NAME_PROD`).
 
 ## Step 8: Test the Pipeline
 
@@ -163,7 +163,16 @@ git push origin feature/test-deployment
 6. Monitor the deployment in the Actions tab
 
 ### Test Manual Deployment to Production
-9: Verify Deployment
+
+1. After Test deployment is verified
+2. Go to **Actions** → **Deploy to Production**
+3. Click **Run workflow**
+4. In the confirmation field, type: `deploy-production`
+5. (Optional) Add deployment notes
+6. Click **Run workflow** button
+7. Monitor the deployment in the Actions tab
+
+## Step 9: Verify Deployment
 
 ### Check Workspace
 
@@ -190,16 +199,7 @@ git push origin feature/test-deployment
 | **Test** | Manual workflow dispatch | Typed confirmation: `deploy-test` | After Dev deployment verified |
 | **Production** | Manual workflow dispatch | Typed confirmation: `deploy-production` | After Test deployment verified |
 
-This approach gives you full control over Test and Prod deployments while automating Dev deployments for rapid iteration. (cp_br_source)
-
-### Check Logs
-
-1. In GitHub Actions, click on the workflow run
-2. Expand "Deploy to Dev Workspace" step
-3. Verify:
-   - Authentication succeeded
-   - Items published
-   - No errors
+This approach gives you full control over Test and Prod deployments while automating Dev deployments for rapid iteration.
 
 ## Troubleshooting
 
