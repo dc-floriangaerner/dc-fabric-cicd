@@ -1,4 +1,4 @@
-# Copyright (c) Microsoft Corporation.
+c# Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
 """Deploy workspace to Fabric via GitHub Actions"""

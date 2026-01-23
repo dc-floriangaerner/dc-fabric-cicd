@@ -65,23 +65,35 @@ For **each workspace** (Dev, Test, Prod):
 | `AZURE_TENANT_ID` | Azure AD Tenant ID | Azure AD App Registration |
 | `AZURE_SUBSCRIPTION_ID` | Azure Subscription ID | Azure Portal → Subscriptions |
 
-## Step 4: Configure GitHub Environments (Optional)
+## Step 4: Configure GitHub Environments
 
-For approval gates on Test and Prod deployments:
+Create three environments for your deployments:
 
 1. Go to **Settings** → **Environments**
 2. Click **New environment**
 3. Create three environments:
-   - `dev` (no protection rules)
-   - `test` (add required reviewers)
-   - `production` (add required reviewers)
+   - `dev` (auto-deploys on merge to main)
+   - `test` (manual deployment via workflow dispatch)
+   - `production` (manual deployment via workflow dispatch)
 
-**For test and production**:
-- Check ☑️ **Required reviewers**
-- Add team members who can approve deployments
-- Optionally set **Wait timer** (e.g., 5 minutes)
+**Environment Configuration**:
+- **Deployment branches**: Set to "Protected branches only" or "Selected branches"
+- This controls which branches can deploy to each environment
 
-## Step 5: Update parameter.yml
+> **Note**: Required reviewers and wait timers require GitHub Team/Enterprise plan. This setup uses manual workflow triggers for Test and Prod deployments instead.
+
+## Step 5: Configure GitHub Variables
+
+1. Go to **Settings** → **Secrets and variables** → **Actions** → **Variables** tab
+2. Click **New repository variable** for each:
+
+| Variable Name | Description | Example Value |
+|------------|-------------|---------------|
+| `WORKSPACE_NAME_DEV` | Development workspace name | `[D] Fabric Blueprint` |
+| `WORKSPACE_NAME_TEST` | Test workspace name | `[T] Fabric Blueprint` |
+| `WORKSPACE_NAME_PROD` | Production workspace name | `[P] Fabric Blueprint` |
+
+## Step 6: Update parameter.yml
 
 Get Item IDs from your **Dev workspace**:
 
@@ -102,15 +114,15 @@ $workspaceId = "<your-dev-workspace-id>"
 az rest --method get --url "https://api.fabric.microsoft.com/v1/workspaces/$workspaceId/items"
 ```
 
-### Update parameter.yml
+### Upda7: Create Fabric Workspaces
 
-```yaml
-find_replace:
-  # Replace this with actual Dev lakehouse_bronze ID
-  - find_value: "12345678-1234-1234-1234-123456789abc"
-    replace_value:
-      _ALL_: "$items.Lakehouse.lakehouse_bronze.id"
-    item_type: "Notebook"
+Create three workspaces with the naming convention:
+
+- `[D] Fabric Blueprint` - Development
+- `[T] Fabric Blueprint` - Test
+- `[P] Fabric Blueprint` - Production
+
+**Important**: These names should match the values you set in GitHub Variables (`WORKSPACE_NAME_DEV`, `WORKSPACE_NAME_TEST`, `WORKSPACE_NAME_PROD`)
 ```
 
 ## Step 6: Create Fabric Workspaces
@@ -123,9 +135,9 @@ Create three workspaces with the naming convention:
 
 **Important**: Match these names exactly in [.github/workflows/fabric-deploy.yml](.github/workflows/fabric-deploy.yml) if different.
 
-## Step 7: Test the Pipeline
+## Step 8: Test the Pipeline
 
-### Test Dev Deployment
+### Test Dev Deployment (Auto)
 
 1. Create a test change:
 ```bash
@@ -139,27 +151,46 @@ git push origin feature/test-deployment
 
 2. Create Pull Request to `main`
 3. Merge the PR
-4. Watch the **Actions** tab for deployment to Dev
+4. Watch the **Actions** tab for automatic deployment to Dev
 
-### Test Manual Promotion
+### Test Manual Deployment to Test
 
 1. After Dev deployment succeeds
-2. Go to **Actions** → **Deploy to Microsoft Fabric**
+2. Go to **Actions** → **Deploy to Test**
 3. Click **Run workflow**
-4. Select:
-   - ☑️ **Deploy to Test environment**
-5. Click **Run workflow**
-6. If approvals configured, approve the deployment
+4. In the confirmation field, type: `deploy-test`
+5. Click **Run workflow** button
+6. Monitor the deployment in the Actions tab
 
-## Step 8: Verify Deployment
+### Test Manual Deployment to Production
+9: Verify Deployment
 
-### Check Dev Workspace
+### Check Workspace
 
-1. Open `[D] Fabric Blueprint` workspace in Fabric
+1. Open the target workspace in Fabric (Dev/Test/Prod)
 2. Verify items are deployed:
    - Lakehouses (lakehouse_bronze, lakehouse_silver, lakehouse_gold)
    - Notebooks (nb_sl_transform, nb_gd_modeling)
    - Pipelines (cp_br_source)
+
+### Check Logs
+
+1. In GitHub Actions, click on the workflow run
+2. Expand the deployment step (e.g., "Deploy to Dev Workspace")
+3. Verify:
+   - Authentication succeeded
+   - Items published
+   - No errors
+
+## Deployment Workflow Summary
+
+| Environment | Trigger | Approval | When to Use |
+|------------|---------|----------|-------------|
+| **Dev** | Automatic on merge to `main` | None | After PR approval and merge |
+| **Test** | Manual workflow dispatch | Typed confirmation: `deploy-test` | After Dev deployment verified |
+| **Production** | Manual workflow dispatch | Typed confirmation: `deploy-production` | After Test deployment verified |
+
+This approach gives you full control over Test and Prod deployments while automating Dev deployments for rapid iteration. (cp_br_source)
 
 ### Check Logs
 

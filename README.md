@@ -46,12 +46,14 @@ Configure the following **GitHub Secrets** in your repository:
 
 **To add secrets**: Go to repository Settings → Secrets and variables → Actions → New repository secret
 
-### GitHub Environments (Optional but Recommended)
+### GitHub Environments
 
-For approval gates, configure GitHub environments:
+Create environments to organize deployments:
 1. Go to Settings → Environments
 2. Create environments: `dev`, `test`, `production`
-3. For `test` and `production`, add required reviewers
+3. Configure deployment branch rules (e.g., "Protected branches only")
+
+> **Note**: Required reviewers require GitHub Team/Enterprise. This architecture uses manual workflow triggers with typed confirmations for Test and Prod instead.
 
 ## Getting Started
 
@@ -100,18 +102,20 @@ git push origin feature/my-feature
 
 ### 4. Promote to Test/Production
 
-After successful Dev deployment and manual testing:
+After successful Dev deployment and manual verification:
 
-1. Go to **Actions** tab in GitHub
-2. Select "Deploy to Microsoft Fabric" workflow
-3. Click "Run workflow"
-4. Select options:
-   - ☑️ Deploy to Test environment
-   - ☐ Deploy to Production environment
-5. Click "Run workflow"
-6. Approve deployment in GitHub (if environment protection is enabled)
+**Deploy to Test:**
+1. Go to **Actions** tab → **Deploy to Test**
+2. Click **Run workflow**
+3. Type `deploy-test` in the confirmation field
+4. Click **Run workflow** button
 
-Repeat for Production when ready.
+**Deploy to Production:**
+1. Go to **Actions** tab → **Deploy to Production**
+2. Click **Run workflow**
+3. Type `deploy-production` in the confirmation field
+4. (Optional) Add deployment notes
+5. Click **Run workflow** button
 
 ## CI/CD Pipeline
 
@@ -119,21 +123,24 @@ Repeat for Production when ready.
 
 ```mermaid
 graph LR
-    A[PR Merged to Main] --> B[Static Analysis]
-    B --> C[Deploy to Dev]
-    C --> D{Manual Test}
-    D -->|Approved| E[Manual Trigger: Deploy to Test]
-    E --> F{Manual Test}
-    F -->|Approved| G[Manual Trigger: Deploy to Prod]
+    A[PR Merged to Main] --> B[Auto Deploy to Dev]
+    B --> C{Verify Dev}
+    C -->|Success| D[Manual: Trigger Deploy to Test]
+    D --> E{Type: deploy-test}
+    E -->|Confirmed| F[Deploy to Test]
+    F --> G{Verify Test}
+    G -->|Success| H[Manual: Trigger Deploy to Prod]
+    H --> I{Type: deploy-production}
+    I -->|Confirmed| J[Deploy to Prod]
 ```
 
-### Static Analysis
+### Deployment Environments
 
-Before deployment, the pipeline validates:
-- ✅ JSON syntax in all item definitions
-- ✅ Python syntax in notebooks
-- ✅ Required metadata files present
-- ✅ Repository structure integrity
+| Environment | Trigger | Confirmation | Use Case |
+|-------------|---------|--------------|----------|
+| **Dev** | Auto on merge to `main` | None | Automatic deployment for rapid iteration |
+| **Test** | Manual workflow dispatch | Type `deploy-test` | After Dev verification |
+| **Production** | Manual workflow dispatch | Type `deploy-production` + notes | After Test verification |
 
 ### Deployment Process
 
@@ -204,9 +211,10 @@ item-name.ItemType/
 - Check `parameter.yml` has `skip_orphan_cleanup: false`
 - Verify item is in scope for deployment
 
-**Manual approval not required**
-- Configure GitHub environments with required reviewers
-- Ensure workflow uses environment protection
+**Manual deployment not triggering**
+- Ensure you're using the correct workflow (Deploy to Test / Deploy to Production)
+- Verify you typed the exact confirmation string (`deploy-test` or `deploy-production`)
+- Check GitHub Actions permissions are enabled
 
 ### Viewing Logs
 
