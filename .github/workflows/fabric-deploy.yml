@@ -159,7 +159,7 @@ jobs:
   deploy-prod:
     name: Deploy to Production
     runs-on: ubuntu-latest
-    needs: [static-analysis, deploy-test]
+    needs: [static-analysis]
     if: github.event_name == 'workflow_dispatch' && inputs.deploy_to_prod
     environment:
       name: production
