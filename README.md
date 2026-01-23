@@ -77,9 +77,9 @@ find_replace:
 ### 2. Initial Setup
 
 ```bash
-# Clone the repository
-git clone https://github.com/dc-floriangaerner/fabric-cicd.git
-cd fabric-cicd
+# Clone your fork or repository of this template
+git clone https://github.com/<your-org>/<your-repo>.git
+cd <your-repo>
 
 # Create a feature branch
 git checkout -b feature/my-feature
