@@ -1,0 +1,7 @@
+# Microsoft Fabric CI/CD Dependencies
+fabric-cicd
+fabric-cli
+
+# Additional dependencies for Azure integration
+azure-identity
+azure-core

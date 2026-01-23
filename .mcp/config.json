@@ -1,0 +1,29 @@
+{
+  "mcpServers": {
+    "fabric": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@microsoft/mcp-server-fabric"
+      ],
+      "env": {
+        "FABRIC_TENANT_ID": "${FABRIC_TENANT_ID}",
+        "FABRIC_CLIENT_ID": "${FABRIC_CLIENT_ID}",
+        "FABRIC_CLIENT_SECRET": "${FABRIC_CLIENT_SECRET}"
+      }
+    },
+    "azure": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@azure/mcp-server-azure"
+      ],
+      "env": {
+        "AZURE_TENANT_ID": "${AZURE_TENANT_ID}",
+        "AZURE_CLIENT_ID": "${AZURE_CLIENT_ID}",
+        "AZURE_CLIENT_SECRET": "${AZURE_CLIENT_SECRET}",
+        "AZURE_SUBSCRIPTION_ID": "${AZURE_SUBSCRIPTION_ID}"
+      }
+    }
+  }
+}

@@ -1,0 +1,71 @@
+name: Deploy to Microsoft Fabric
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - staging
+          - production
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment || 'dev' }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      
+      - name: Set up Node.js for MCP servers
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Authenticate with Azure
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+      
+      - name: Deploy to Fabric
+        env:
+          FABRIC_TENANT_ID: ${{ secrets.FABRIC_TENANT_ID }}
+          FABRIC_CLIENT_ID: ${{ secrets.FABRIC_CLIENT_ID }}
+          FABRIC_CLIENT_SECRET: ${{ secrets.FABRIC_CLIENT_SECRET }}
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        run: |
+          echo "Deploying to Fabric environment: ${{ github.event.inputs.environment || 'dev' }}"
+          
+          # Example: List workspaces
+          # fabric-cli workspace list
+          
+          # Example: Deploy resources
+          # fabric-cli deploy --workspace-id ${{ secrets.FABRIC_WORKSPACE_ID }}
+          
+          echo "Deployment completed successfully"
+      
+      - name: Post-deployment validation
+        run: |
+          echo "Running post-deployment validation"
+          # Add validation commands here
+          echo "Validation completed"

@@ -1,0 +1,35 @@
+[project]
+name = "fabric-cicd"
+version = "0.1.0"
+description = "Microsoft Fabric CI/CD demonstration with GitHub Actions"
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+    "fabric-cicd",
+    "fabric-cli",
+    "azure-identity",
+    "azure-core",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "black>=23.0.0",
+    "flake8>=6.0.0",
+    "mypy>=1.0.0",
+]
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.black]
+line-length = 100
+target-version = ['py38', 'py39', 'py310', 'py311']
+
+[tool.mypy]
+python_version = "3.8"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
