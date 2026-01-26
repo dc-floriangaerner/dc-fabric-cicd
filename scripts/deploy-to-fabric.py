@@ -60,7 +60,7 @@ try:
         token_credential=token_credential,
     )
 
-    print(f"Workspace initialized: {target_workspace.workspace_name}")
+    print(f"Workspace initialized: {workspace_name}")
 
     # Publish all items defined in item_type_in_scope
     print("Publishing all items...")
