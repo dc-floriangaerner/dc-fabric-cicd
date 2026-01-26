@@ -5,28 +5,28 @@
 find_replace:
     # Replace Bronze Lakehouse in Notebooks
     # Find the Dev lakehouse ID and replace with the target environment's ID
-    - find_value: "052c3902-d408-4020-a95a-938ac05bd6b8" # TODO: Add Item Id of lakehouse_bronze in Dev workspace
+    - find_value: "" # TODO: Add Item Id of lakehouse_bronze in Dev workspace
       replace_value:
         _ALL_: "$items.Lakehouse.lakehouse_bronze.id"
       item_type: "Notebook"
       description: "Replace Bronze Lakehouse ID in all notebooks"
     
     # Replace Silver Lakehouse in Notebooks
-    - find_value: "1806825e-ec89-4062-a59b-42fea81d9b59" # TODO: Add Item Id of lakehouse_silver in Dev workspace
+    - find_value: "" # TODO: Add Item Id of lakehouse_silver in Dev workspace
       replace_value:
         _ALL_: "$items.Lakehouse.lakehouse_silver.id"
       item_type: "Notebook"
       description: "Replace Silver Lakehouse ID in all notebooks"
 
     # Replace Gold Lakehouse in Notebooks
-    - find_value: "62e613ce-4b81-4ec9-9aaf-c6da8d1ce196" # TODO: Add Item Id of lakehouse_gold in Dev workspace
+    - find_value: "" # TODO: Add Item Id of lakehouse_gold in Dev workspace
       replace_value:
         _ALL_: "$items.Lakehouse.lakehouse_gold.id"
       item_type: "Notebook"
       description: "Replace Gold Lakehouse ID in all notebooks"
 
     # Replace Dev Workspace Id in Notebooks
-    - find_value: "9bc2bfc4-1acc-4535-8a80-150507b116d4" # TODO: Add Workspace Id of Dev Workspace
+    - find_value: "" # TODO: Add Workspace Id of Dev Workspace
       replace_value:
         _ALL_: "$workspace.id"
       item_type: "Notebook"
