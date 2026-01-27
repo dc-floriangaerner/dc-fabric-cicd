@@ -46,6 +46,12 @@ jobs:
           fi
           
           # Get all workspace folders
+          if [ ! -d "${{ env.WORKSPACES_DIRECTORY }}" ]; then
+            echo "Error: Workspaces directory '${{ env.WORKSPACES_DIRECTORY }}' does not exist." >&2
+            echo "all_workspaces=" >> "$GITHUB_OUTPUT"
+            echo "workspaces=" >> "$GITHUB_OUTPUT"
+            exit 1
+          fi
           all_workspaces=$(find "${{ env.WORKSPACES_DIRECTORY }}" -mindepth 1 -maxdepth 1 -type d -exec basename {} \; | sort | tr '\n' ',' | sed 's/,$//')
           echo "all_workspaces=$all_workspaces" >> $GITHUB_OUTPUT
           echo "All workspaces: $all_workspaces"
