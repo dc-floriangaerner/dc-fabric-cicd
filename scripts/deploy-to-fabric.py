@@ -247,7 +247,7 @@ def main():
             
             # Build a mapping from workspace name to its recorded state
             workspace_state_by_folder = {}
-            for i, state in enumerate(workspace_states):
+            for state in workspace_states:
                 # Extract folder name from workspace name by removing stage prefix
                 workspace_name = state.get("workspace_name", "")
                 stage_prefix = get_stage_prefix(environment)
@@ -261,7 +261,7 @@ def main():
                 print(f"Rollback {i+1}/{len(deployed_workspaces)}:")
                 state = workspace_state_by_folder.get(workspace_folder)
                 if not state:
-                    print(f"  ⚠ Warning: No recorded state available for workspace '{workspace_folder}'; skipping rollback for this workspace.")
+                    print(f"  ⚠ Warning: No recorded state for workspace '{workspace_folder}', skipping rollback.")
                     rollback_success = False
                     continue
                 
