@@ -155,6 +155,19 @@ The Fabric MCP (Model Context Protocol) server provides specialized tools and co
 - Direct integration with Fabric REST APIs
 - Official Microsoft documentation and examples
 
+**When MCP server is not available:**
+
+If the Fabric MCP server is not available or doesn't have the appropriate tools for your task, use the official web documentation:
+- **fabric-cicd library**: https://microsoft.github.io/fabric-cicd/latest/
+- **fabric-cli tool**: https://microsoft.github.io/fabric-cli/
+
+These resources provide:
+- Comprehensive API references
+- Usage examples and code samples
+- Configuration options and parameters
+- Troubleshooting guides
+- Latest feature documentation
+
 ## Architecture
 
 ### Medallion Layers
