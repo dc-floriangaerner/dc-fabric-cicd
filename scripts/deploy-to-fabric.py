@@ -13,6 +13,7 @@ from typing import List, Dict, Optional
 
 from azure.identity import ClientSecretCredential, DefaultAzureCredential
 from fabric_cicd import FabricWorkspace, change_log_level, publish_all_items, unpublish_all_orphan_items
+from fabric_workspace_manager import ensure_workspace_exists, validate_workspace_creator_permission
 
 
 def get_stage_prefix(environment: str) -> str:
@@ -44,7 +45,9 @@ def deploy_workspace(
     workspace_folder: str,
     workspaces_dir: str,
     environment: str,
-    token_credential
+    token_credential,
+    capacity_id: str = None,
+    service_principal_object_id: str = None
 ) -> tuple[bool, str]:
     """Deploy a single workspace.
     
@@ -53,6 +56,8 @@ def deploy_workspace(
         workspaces_dir: Root directory containing workspace folders
         environment: Target environment (dev/test/prod)
         token_credential: Azure credential for authentication
+        capacity_id: Fabric capacity ID for workspace creation (optional if workspace exists)
+        service_principal_object_id: Azure AD Object ID of service principal for role assignment
         
     Returns:
         Tuple of (success: bool, error_message: str). Error message is empty string if successful.
@@ -71,6 +76,19 @@ def deploy_workspace(
         print(f"Environment: {environment}")
         print(f"Repository directory: {repository_directory}")
         print(f"{'='*60}\n")
+        
+        # Ensure workspace exists (create if necessary)
+        try:
+            workspace_id = ensure_workspace_exists(
+                workspace_name=workspace_name,
+                capacity_id=capacity_id,
+                service_principal_object_id=service_principal_object_id,
+                token_credential=token_credential
+            )
+        except Exception as e:
+            error_message = str(e)
+            print(f"\n✗ ERROR: Failed to ensure workspace exists: {error_message}\n")
+            return False, f"Workspace creation/validation failed: {error_message}"
         
         # Initialize the FabricWorkspace object
         target_workspace = FabricWorkspace(
@@ -150,6 +168,25 @@ def main():
             print("→ Using DefaultAzureCredential for authentication (local development)")
             token_credential = DefaultAzureCredential()
         
+        # Get workspace creation configuration from environment
+        capacity_id = None
+        if environment.lower() == "dev":
+            capacity_id = os.getenv("FABRIC_CAPACITY_ID_DEV")
+        elif environment.lower() == "test":
+            capacity_id = os.getenv("FABRIC_CAPACITY_ID_TEST")
+        elif environment.lower() == "prod":
+            capacity_id = os.getenv("FABRIC_CAPACITY_ID_PROD")
+        
+        service_principal_object_id = os.getenv("DEPLOYMENT_SP_OBJECT_ID")
+        
+        # Validate workspace creator permissions
+        print("→ Validating Service Principal permissions...")
+        has_permission, error_msg = validate_workspace_creator_permission(token_credential)
+        if not has_permission:
+            print(f"✗ ERROR: {error_msg}\n")
+            sys.exit(1)
+        print("  ✓ Service Principal has Fabric API access\n")
+        
         # Determine which workspaces to deploy
         if workspace_folders_arg:
             workspace_folders = [f.strip() for f in workspace_folders_arg.split(",")]
@@ -178,7 +215,9 @@ def main():
                 workspace_folder=workspace_folder,
                 workspaces_dir=workspaces_directory,
                 environment=environment,
-                token_credential=token_credential
+                token_credential=token_credential,
+                capacity_id=capacity_id,
+                service_principal_object_id=service_principal_object_id
             )
             
             if success:
