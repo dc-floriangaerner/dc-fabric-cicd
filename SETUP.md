@@ -80,13 +80,17 @@ az ad sp create-for-rbac --name "fabric-cicd-deployment" --skip-assignment --out
 az ad sp show --id <YOUR-CLIENT-ID> --query id -o tsv
 ```
 
-## Step 1b: Grant Workspace Creator Permission (For Auto-Creation)
+## Step 1b: Configure Service Principal for Workspace Creation (For Auto-Creation)
 
 **This step is required for automatic workspace creation. Skip if you plan to manually create all workspaces.**
 
+The Service Principal needs **TWO separate configurations** to create workspaces:
+
+### 1. Enable Fabric Tenant Setting
+
 1. Open **Fabric Admin Portal**: https://app.fabric.microsoft.com/admin-portal
 2. Navigate to **Tenant Settings** → **Developer Settings**
-3. Find setting: **Service principals can create and edit Fabric workspaces**
+3. Find setting: **Service principals can create workspaces, connections, and deployment pipelines**
 4. Enable the setting
 5. Under **Apply to**, select **Specific security groups**
 6. Add your Service Principal:
@@ -94,9 +98,28 @@ az ad sp show --id <YOUR-CLIENT-ID> --query id -o tsv
    - Or create a security group and add the Service Principal to it
 7. Click **Apply**
 
-**Why this permission is needed:**
-- Allows the deployment pipeline to automatically create new workspaces when you add new workspace folders
-- Without this, you must manually create workspaces before deployment
+### 2. Assign Service Principal as Capacity Administrator
+
+**⚠️ CRITICAL**: Even with the tenant setting enabled, the Service Principal **must be added as a Capacity Administrator** to create workspaces on that capacity.
+
+1. Open **Azure Portal**: https://portal.azure.com
+2. Navigate to your **Fabric Capacity** resource (search for "Fabric capacities" or find it in your resource group)
+3. Go to **Settings** → **Capacity administrators**
+4. Click **Add** under the "Accounts" section
+5. Enter one of the following:
+   - The Service Principal's **Client ID** (Application ID)
+   - Or search for the **Enterprise Application** by name (`fabric-cicd-deployment`)
+6. Click **Add** to confirm
+
+**⚠️ Important Notes:**
+- This is **NOT** done through "Access Control (IAM)" - it's a dedicated **Capacity administrators** setting
+- Without this assignment, workspace creation will fail with a 403 error even if tenant settings are correct
+- You need to add the SP as capacity admin for **each capacity** (Dev, Test, Prod if using separate capacities)
+
+**Why these permissions are needed:**
+- Tenant setting: Grants organization-wide permission for service principals to create workspaces
+- Capacity admin: Grants permission to create workspaces on the specific capacity
+- Both are required; having only one will result in a 403 Forbidden error
 
 ## Step 2: Get Fabric Capacity IDs (For Auto-Creation)
 
