@@ -242,6 +242,10 @@ def add_workspace_admin(workspace_id: str, service_principal_object_id: str, tok
             print(f"  ✓ Service Principal already has Admin access")
         else:
             raise Exception(f"Invalid role assignment request: {error_detail}")
+    elif response.status_code == 409:
+        # HTTP 409 Conflict: Principal already has role permissions in workspace
+        # This is expected when the SP already has a role assigned, treat as success
+        print(f"  ✓ Service Principal already has Admin access")
     elif response.status_code == 404:
         raise Exception(
             f"Invalid Service Principal Object ID '{service_principal_object_id}'. "
