@@ -85,6 +85,7 @@ def deploy_workspace(
                 service_principal_object_id=service_principal_object_id,
                 token_credential=token_credential
             )
+            print(f"→ Workspace ensured with ID: {workspace_id}")
         except Exception as e:
             error_message = str(e)
             print(f"\n✗ ERROR: Failed to ensure workspace exists: {error_message}\n")
@@ -179,13 +180,16 @@ def main():
         
         service_principal_object_id = os.getenv("DEPLOYMENT_SP_OBJECT_ID")
         
-        # Validate workspace creator permissions
-        print("→ Validating Service Principal permissions...")
-        has_permission, error_msg = validate_workspace_creator_permission(token_credential)
-        if not has_permission:
-            print(f"✗ ERROR: {error_msg}\n")
-            sys.exit(1)
-        print("  ✓ Service Principal has Fabric API access\n")
+        # Validate workspace creator permissions only when automatic workspace creation is enabled
+        if capacity_id:
+            print("→ Validating Service Principal permissions for workspace creation...")
+            has_permission, error_msg = validate_workspace_creator_permission(token_credential)
+            if not has_permission:
+                print(f"✗ ERROR: {error_msg}\n")
+                sys.exit(1)
+            print("  ✓ Service Principal has Fabric API access for workspace creation\n")
+        else:
+            print("→ Skipping workspace-creation permission validation (no capacity configured; automatic workspace creation disabled)\n")
         
         # Determine which workspaces to deploy
         if workspace_folders_arg:
