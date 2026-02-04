@@ -3,10 +3,8 @@
 
 """Fabric workspace management utilities for auto-creating workspaces and managing permissions."""
 
-import sys
 from typing import Optional
 import requests
-from azure.identity import ClientSecretCredential
 
 
 def get_access_token(token_credential) -> str:
@@ -123,7 +121,11 @@ def create_workspace(workspace_name: str, capacity_id: str, token_credential) ->
     """
     try:
         if not capacity_id:
-            raise Exception("Capacity ID is required for workspace creation. Set FABRIC_CAPACITY_ID_* secrets in GitHub.")
+            raise Exception(
+                "Capacity ID is required to auto-create a Fabric workspace. "
+                f"Either manually create a workspace named '{workspace_name}' in Fabric, "
+                "or set the appropriate FABRIC_CAPACITY_ID_* secret in GitHub to enable auto-creation."
+            )
         
         token = get_access_token(token_credential)
         headers = {
@@ -145,7 +147,16 @@ def create_workspace(workspace_name: str, capacity_id: str, token_credential) ->
             print(f"  ✓ Workspace created successfully (ID: {workspace_id})")
             return workspace_id
         elif response.status_code == 400:
-            error_detail = response.json().get("error", {}).get("message", response.text)
+            # Safely parse error details
+            try:
+                error_body = response.json()
+                if isinstance(error_body, dict):
+                    error_detail = error_body.get("error", {}).get("message", response.text)
+                else:
+                    error_detail = response.text
+            except Exception:
+                # Fallback if response is not valid JSON or has unexpected structure
+                error_detail = response.text
             raise Exception(f"Invalid workspace creation request: {error_detail}")
         elif response.status_code == 403:
             raise Exception(
@@ -206,7 +217,16 @@ def add_workspace_admin(workspace_id: str, service_principal_object_id: str, tok
         if response.status_code == 200:
             print(f"  ✓ Service Principal added as Admin successfully")
         elif response.status_code == 400:
-            error_detail = response.json().get("error", {}).get("message", response.text)
+            # Safely parse error details without assuming JSON structure
+            error_detail = response.text
+            content_type = response.headers.get("Content-Type", "").lower()
+            if "application/json" in content_type:
+                try:
+                    body = response.json()
+                    error_detail = body.get("error", {}).get("message", error_detail)
+                except Exception:
+                    # Fall back to raw response text if JSON parsing fails
+                    error_detail = response.text or "Unknown error"
             # Check if SP already has access
             if "already exists" in error_detail.lower() or "already assigned" in error_detail.lower():
                 print(f"  ✓ Service Principal already has Admin access")
