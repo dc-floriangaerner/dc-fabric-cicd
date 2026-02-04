@@ -178,9 +178,12 @@ def create_workspace(workspace_name: str, capacity_id: str, token_credential: Un
         raise Exception(f"Invalid workspace creation request: {error_detail}")
     elif response.status_code == 403:
         raise Exception(
-            "Service Principal lacks 'Workspace Creator' permission. "
-            "Grant this permission in Fabric Admin Portal → Tenant Settings → Developer Settings → "
-            "Service Principals can create and edit Fabric workspaces."
+            "Service Principal lacks workspace creation permissions.\n\n"
+            "Possible causes:\n"
+            "1. Missing tenant setting: In Fabric Admin Portal → Tenant Settings → Developer Settings, "
+            "enable 'Service principals can create workspaces, connections, and deployment pipelines'\n"
+            "2. Missing capacity admin role: In Azure Portal → Fabric Capacity → Settings → Capacity administrators, "
+            "add the Service Principal (by Client ID or Enterprise Application Object ID)"
         )
     elif response.status_code == 404:
         raise Exception(f"Invalid capacity ID '{capacity_id}'. Verify FABRIC_CAPACITY_ID_* secret is correct.")
@@ -390,12 +393,18 @@ def ensure_workspace_exists(
         print(f"\n✗ ERROR: Failed to ensure workspace exists: {error_msg}\n")
         
         # Add troubleshooting hints
-        if "Workspace Creator" in error_msg:
+        if "workspace creation permissions" in error_msg:
             print("TROUBLESHOOTING:")
-            print("  1. Open Fabric Admin Portal (https://app.fabric.microsoft.com/admin-portal)")
-            print("  2. Navigate to: Tenant Settings → Developer Settings")
-            print("  3. Enable: 'Service Principals can create and edit Fabric workspaces'")
-            print("  4. Add your Service Principal to the allowed list")
+            print("  1. Fabric Tenant Setting:")
+            print("     - Open Fabric Admin Portal (https://app.fabric.microsoft.com/admin-portal)")
+            print("     - Navigate to: Tenant Settings → Developer Settings")
+            print("     - Enable: 'Service principals can create workspaces, connections, and deployment pipelines'")
+            print("     - Add your Service Principal to the allowed list")
+            print("  2. Capacity Administrator Assignment:")
+            print("     - Open Azure Portal → Your Fabric Capacity → Settings")
+            print("     - Under 'Capacity administrators', click Add")
+            print("     - Enter the Service Principal's Client ID (Application ID) or search by Enterprise Application name")
+            print("     - Note: This is NOT done through Access Control (IAM) - it's a dedicated 'Capacity administrators' setting")
             print()
         elif "capacity" in error_msg.lower():
             print("TROUBLESHOOTING:")
