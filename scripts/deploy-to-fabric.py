@@ -1,12 +1,13 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
-"""Deploy workspaces to Fabric via GitHub Actions with rollback support"""
+"""Deploy workspaces to Fabric via GitHub Actions with continue-on-failure support"""
 
 import argparse
 import json
 import os
 import sys
+import time
 from pathlib import Path
 from typing import List, Dict, Optional
 
@@ -39,80 +40,22 @@ def get_workspace_folders(workspaces_dir: str) -> List[str]:
     return sorted(workspace_folders)
 
 
-def record_workspace_deployment(workspace: FabricWorkspace) -> Dict:
-    """Record deployment attempt for a workspace for rollback tracking.
-    
-    Note: This is a simplified implementation that only records metadata.
-    A full implementation would capture complete item definitions for restoration.
-    """
-    try:
-        # Store workspace metadata for rollback tracking
-        # In production, you would capture full item definitions here
-        state = {
-            "workspace_name": workspace.display_name,
-            "recorded": True,
-            "message": "Deployment recorded successfully"
-        }
-        print(f"  ✓ Recorded deployment for workspace: {workspace.display_name}")
-        return state
-    except Exception as e:
-        print(f"  ⚠ Warning: Failed to record deployment for workspace: {str(e)}")
-        return {"workspace_name": "unknown", "recorded": False}
-
-
-def rollback_workspace(workspace_state: Dict, token_credential) -> bool:
-    """Rollback a workspace deployment.
-    
-    Args:
-        workspace_state: Dictionary containing workspace metadata and deployment state
-        token_credential: Azure credential for Fabric API authentication (will be needed
-                         for actual rollback implementation to restore items)
-    
-    Returns:
-        True if rollback succeeds (or is logged successfully), False otherwise
-    
-    Note: This is a placeholder implementation that only logs the rollback intention.
-    A full implementation would restore items from captured state by:
-    1. Retrieving the original item definitions from workspace_state
-    2. Using token_credential with fabric-cicd to republish those original items
-    3. Removing any items that were added during the failed deployment
-    """
-    try:
-        workspace_name = workspace_state.get("workspace_name")
-        if not workspace_state.get("recorded"):
-            print(f"  ⚠ Skipping rollback for {workspace_name} - deployment not recorded")
-            return True
-        
-        print(f"  → Rolling back workspace: {workspace_name}")
-        # TODO: Implement actual rollback by restoring items from captured state
-        # For now, we just log the rollback intention
-        print(f"  ⚠ Rollback logged for: {workspace_name} (actual restoration not implemented)")
-        return True
-    except Exception as e:
-        print(f"  ✗ Rollback failed for {workspace_state.get('workspace_name')}: {str(e)}")
-        return False
-
-
 def deploy_workspace(
     workspace_folder: str,
     workspaces_dir: str,
     environment: str,
-    token_credential,
-    workspace_states: List[Dict],
-    deployed_workspaces: List[str]
-) -> bool:
-    """Deploy a single workspace and track its state.
+    token_credential
+) -> tuple[bool, str]:
+    """Deploy a single workspace.
     
     Args:
         workspace_folder: Name of the workspace folder
         workspaces_dir: Root directory containing workspace folders
         environment: Target environment (dev/test/prod)
         token_credential: Azure credential for authentication
-        workspace_states: List to append deployment state for rollback
-        deployed_workspaces: List to append successfully deployed workspace names
         
     Returns:
-        True if deployment succeeds, False otherwise
+        Tuple of (success: bool, error_message: str). Error message is empty string if successful.
     """
     try:
         # Construct workspace name with stage prefix
@@ -139,10 +82,6 @@ def deploy_workspace(
         
         print(f"→ Workspace initialized: {workspace_name}")
         
-        # Record deployment attempt before actual deployment
-        state = record_workspace_deployment(target_workspace)
-        workspace_states.append(state)
-        
         # Publish all items defined in item_type_in_scope
         print(f"→ Publishing all items...")
         publish_all_items(target_workspace)
@@ -153,15 +92,13 @@ def deploy_workspace(
         unpublish_all_orphan_items(target_workspace)
         print(f"  ✓ Orphan items removed successfully")
         
-        # Mark deployment as successful
-        deployed_workspaces.append(workspace_folder)
-        
         print(f"\n✓ Deployment to {workspace_name} completed successfully!\n")
-        return True
+        return True, ""
         
     except Exception as e:
-        print(f"\n✗ ERROR: Deployment failed for workspace '{workspace_folder}': {str(e)}\n")
-        return False
+        error_message = str(e)
+        print(f"\n✗ ERROR: Deployment failed for workspace '{workspace_folder}': {error_message}\n")
+        return False, error_message
 
 
 def main():
@@ -225,80 +162,70 @@ def main():
             print("✗ ERROR: No workspace folders found to deploy")
             sys.exit(1)
         
-        # Track deployment state for rollback
-        # Note: workspace_states currently tracks deployment metadata only.
-        # For production use, record_workspace_deployment() should be enhanced to capture
-        # complete item definitions (notebooks, lakehouses, pipelines, etc.) that can be
-        # restored via rollback_workspace() if a subsequent deployment fails.
-        workspace_states: List[Dict] = []
+        # Track deployment results
         deployed_workspaces: List[str] = []
-        failed_workspace: Optional[str] = None
+        failed_deployments: List[Dict[str, str]] = []
         
-        # Deploy each workspace
-        for workspace_folder in workspace_folders:
-            success = deploy_workspace(
+        # Track deployment duration
+        deployment_start_time = time.time()
+        
+        # Deploy each workspace (continue on failure)
+        print(f"Starting deployment of {len(workspace_folders)} workspace(s)...\n")
+        for i, workspace_folder in enumerate(workspace_folders, 1):
+            print(f"[{i}/{len(workspace_folders)}] Processing workspace: {workspace_folder}")
+            
+            success, error_message = deploy_workspace(
                 workspace_folder=workspace_folder,
                 workspaces_dir=workspaces_directory,
                 environment=environment,
-                token_credential=token_credential,
-                workspace_states=workspace_states,
-                deployed_workspaces=deployed_workspaces
+                token_credential=token_credential
             )
             
-            if not success:
-                failed_workspace = workspace_folder
-                break
-        
-        # If any deployment failed, rollback all previously deployed workspaces
-        if failed_workspace:
-            print("\n" + "="*70)
-            print("DEPLOYMENT FAILURE - INITIATING ROLLBACK")
-            print("="*70)
-            print(f"Failed workspace: {failed_workspace}")
-            print(f"Rolling back {len(deployed_workspaces)} previously deployed workspace(s)...\n")
-            
-            # Build a mapping from workspace name to its recorded state
-            workspace_state_by_folder = {}
-            for state in workspace_states:
-                # Extract folder name from workspace name by removing stage prefix
-                workspace_name = state.get("workspace_name", "")
-                stage_prefix = get_stage_prefix(environment)
-                if workspace_name.startswith(stage_prefix):
-                    folder_name = workspace_name[len(stage_prefix):]
-                    workspace_state_by_folder[folder_name] = state
-            
-            # Rollback only successfully deployed workspaces, in reverse deployment order
-            rollback_success = True
-            for i, workspace_folder in enumerate(reversed(deployed_workspaces)):
-                print(f"Rollback {i+1}/{len(deployed_workspaces)}:")
-                state = workspace_state_by_folder.get(workspace_folder)
-                if not state:
-                    print(f"  ⚠ Warning: No recorded state for workspace '{workspace_folder}', skipping rollback.")
-                    rollback_success = False
-                    continue
-                
-                if not rollback_workspace(state, token_credential):
-                    rollback_success = False
-            
-            if rollback_success:
-                print("\n✓ All workspaces rolled back successfully")
+            if success:
+                deployed_workspaces.append(workspace_folder)
             else:
-                print("\n⚠ Some rollback operations failed - manual intervention may be required")
-            
-            print("\n" + "="*70)
-            print(f"DEPLOYMENT FAILED: {failed_workspace}")
-            print("="*70 + "\n")
-            sys.exit(1)
+                failed_deployments.append({
+                    "workspace": workspace_folder,
+                    "error": error_message
+                })
         
-        # All deployments succeeded
+        # Calculate deployment duration
+        deployment_duration = time.time() - deployment_start_time
+        
+        # Print comprehensive deployment summary
         print("\n" + "="*70)
-        print("ALL DEPLOYMENTS COMPLETED SUCCESSFULLY")
+        print("DEPLOYMENT SUMMARY")
         print("="*70)
-        print(f"Deployed {len(deployed_workspaces)} workspace(s):")
-        for workspace in deployed_workspaces:
+        print(f"Environment: {environment.upper()}")
+        print(f"Duration: {deployment_duration:.2f} seconds")
+        print(f"Total workspaces: {len(workspace_folders)}")
+        print(f"Successful: {len(deployed_workspaces)}")
+        print(f"Failed: {len(failed_deployments)}")
+        print("="*70)
+        
+        # Report successful deployments
+        if deployed_workspaces:
+            print("\n✓ SUCCESSFUL DEPLOYMENTS:")
             stage_prefix = get_stage_prefix(environment)
-            print(f"  ✓ {stage_prefix}{workspace}")
-        print("="*70 + "\n")
+            for workspace in deployed_workspaces:
+                print(f"  ✓ {stage_prefix}{workspace}")
+        
+        # Report failed deployments
+        if failed_deployments:
+            print("\n✗ FAILED DEPLOYMENTS:")
+            for failure in failed_deployments:
+                print(f"  ✗ {failure['workspace']}")
+                print(f"    Error: {failure['error']}")
+        
+        print("\n" + "="*70)
+        
+        # Exit with appropriate code
+        if failed_deployments:
+            print(f"\nDeployment completed with {len(failed_deployments)} failure(s)\n")
+            sys.exit(1)
+        else:
+            print(f"\nAll {len(deployed_workspaces)} workspace(s) deployed successfully!\n")
+            sys.exit(0)
         
     except Exception as e:
         print(f"\n✗ CRITICAL ERROR: {str(e)}\n")
