@@ -251,7 +251,13 @@ jobs:
           echo "- **Total Workspaces**: $total_workspaces" >> $GITHUB_STEP_SUMMARY
           echo "- **Successful**: $successful_count" >> $GITHUB_STEP_SUMMARY
           echo "- **Failed**: $failed_count" >> $GITHUB_STEP_SUMMARY
-          echo "- **Duration**: ${duration}s" >> $GITHUB_STEP_SUMMARY
+          # Format duration to 2 decimal places if it's a number
+          if [[ "$duration" =~ ^[0-9]+\.?[0-9]*$ ]]; then
+            formatted_duration=$(printf "%.2f" "$duration")
+            echo "- **Duration**: ${formatted_duration}s" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- **Duration**: ${duration}s" >> $GITHUB_STEP_SUMMARY
+          fi
           echo "- **Status**: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Completed**: $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -341,7 +347,13 @@ jobs:
           echo "- **Total Workspaces**: $total_workspaces" >> $GITHUB_STEP_SUMMARY
           echo "- **Successful**: $successful_count" >> $GITHUB_STEP_SUMMARY
           echo "- **Failed**: $failed_count" >> $GITHUB_STEP_SUMMARY
-          echo "- **Duration**: ${duration}s" >> $GITHUB_STEP_SUMMARY
+          # Format duration to 2 decimal places if it's a number
+          if [[ "$duration" =~ ^[0-9]+\.?[0-9]*$ ]]; then
+            formatted_duration=$(printf "%.2f" "$duration")
+            echo "- **Duration**: ${formatted_duration}s" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- **Duration**: ${duration}s" >> $GITHUB_STEP_SUMMARY
+          fi
           echo "- **Status**: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Completed**: $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -431,7 +443,13 @@ jobs:
           echo "- **Total Workspaces**: $total_workspaces" >> $GITHUB_STEP_SUMMARY
           echo "- **Successful**: $successful_count" >> $GITHUB_STEP_SUMMARY
           echo "- **Failed**: $failed_count" >> $GITHUB_STEP_SUMMARY
-          echo "- **Duration**: ${duration}s" >> $GITHUB_STEP_SUMMARY
+          # Format duration to 2 decimal places if it's a number
+          if [[ "$duration" =~ ^[0-9]+\.?[0-9]*$ ]]; then
+            formatted_duration=$(printf "%.2f" "$duration")
+            echo "- **Duration**: ${formatted_duration}s" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- **Duration**: ${duration}s" >> $GITHUB_STEP_SUMMARY
+          fi
           echo "- **Status**: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Completed**: $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
