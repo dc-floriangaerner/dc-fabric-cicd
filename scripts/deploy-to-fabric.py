@@ -56,8 +56,13 @@ def deploy_workspace(
         workspaces_dir: Root directory containing workspace folders
         environment: Target environment (dev/test/prod)
         token_credential: Azure credential for authentication
-        capacity_id: Fabric capacity ID for workspace creation (optional if workspace exists)
-        service_principal_object_id: Azure AD Object ID of service principal for role assignment
+        capacity_id: Fabric capacity ID used when creating the workspace.
+            Required if the workspace does not already exist and must be auto-created;
+            optional if the target workspace already exists.
+        service_principal_object_id: Azure AD Object ID of the service principal used for
+            role assignment when a new workspace is created. Required for auto-creation
+            scenarios where the service principal should be granted access; optional if
+            the workspace already exists and no new role assignment is needed.
         
     Returns:
         Tuple of (success: bool, error_message: str). Error message is empty string if successful.
