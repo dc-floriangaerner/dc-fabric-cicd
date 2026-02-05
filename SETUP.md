@@ -21,10 +21,11 @@ workspaces/
 ```
 
 Each workspace folder contains:
-- Its own `parameter.yml` configuration file
+- Its own `config.yml` configuration file (defines workspace names per environment)
+- Its own `parameter.yml` configuration file (defines ID transformations)
 - Fabric items (Lakehouses, Notebooks, Pipelines, etc.)
 
-Workspace names are dynamically constructed with stage prefixes:
+Workspace names are explicitly configured in `config.yml`:
 - **Dev**: `[D] <workspace-name>`
 - **Test**: `[T] <workspace-name>`
 - **Prod**: `[P] <workspace-name>`
@@ -270,6 +271,47 @@ For each workspace folder in `workspaces/`, create three Fabric workspaces:
 - Prefixes are case-sensitive: `[D] `, `[T] `, `[P] ` (with space after bracket)
 - If auto-creation is enabled, these workspaces will be created automatically on first deployment
 
+## Step 6b: Create config.yml for Each Workspace
+
+Each workspace folder requires a `config.yml` file that defines workspace names for each environment.
+
+**Example: `workspaces/Fabric Blueprint/config.yml`**
+
+```yaml
+core:
+  workspace:
+    dev: "[D] Fabric Blueprint"
+    test: "[T] Fabric Blueprint"
+    prod: "[P] Fabric Blueprint"
+  
+  repository_directory: "."  # Relative to config.yml location
+  
+  parameter: "parameter.yml"  # References parameter.yml in same folder
+
+publish:
+  skip:
+    dev: false
+    test: false
+    prod: false
+
+unpublish:
+  skip:
+    dev: false
+    test: false
+    prod: false
+
+features:
+  - enable_experimental_features
+  - enable_config_deploy
+```
+
+**Create config.yml for each workspace folder:**
+- Fabric Blueprint: `workspaces/Fabric Blueprint/config.yml`
+- Fabric Bronze: `workspaces/Fabric Bronze/config.yml`
+- Fabric Autocreated Workspace: `workspaces/Fabric Autocreated Workspace/config.yml`
+
+**Important**: The `config.yml` uses experimental fabric-cicd features. The workspace names should match your intended target workspaces.
+
 ## Step 7: Update Workspace parameter.yml Files
 
 Get Item IDs from your **Dev workspace** for each workspace folder:
@@ -418,8 +460,8 @@ This ensures environments remain in a consistent state.
 
 **Solution**:
 - Ensure workspace folders are directly under `workspaces/` directory
-- Each workspace folder must contain a `parameter.yml` file
-- Verify folder structure: `workspaces/<workspace-name>/parameter.yml`
+- Each workspace folder must contain both `config.yml` and `parameter.yml` files
+- Verify folder structure: `workspaces/<workspace-name>/config.yml` and `workspaces/<workspace-name>/parameter.yml`
 
 ### Deployment Not Triggered
 
@@ -459,7 +501,36 @@ To add a new workspace to the repository:
 mkdir workspaces/"New Workspace"
 ```
 
-2. **Create parameter.yml**:
+2. **Create config.yml**:
+```yaml
+# workspaces/New Workspace/config.yml
+core:
+  workspace:
+    dev: "[D] New Workspace"
+    test: "[T] New Workspace"
+    prod: "[P] New Workspace"
+  
+  repository_directory: "."
+  parameter: "parameter.yml"
+
+publish:
+  skip:
+    dev: false
+    test: false
+    prod: false
+
+unpublish:
+  skip:
+    dev: false
+    test: false
+    prod: false
+
+features:
+  - enable_experimental_features
+  - enable_config_deploy
+```
+
+3. **Create parameter.yml**:
 ```yaml
 # workspaces/New Workspace/parameter.yml
 find_replace:

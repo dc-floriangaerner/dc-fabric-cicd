@@ -4,3 +4,4 @@
 fabric-cicd
 azure-identity
 requests
+pyyaml

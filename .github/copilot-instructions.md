@@ -13,23 +13,26 @@ This repository supports deploying multiple Fabric workspaces from a single repo
 ```
 workspaces/
 ├── Fabric Blueprint/
-│   ├── parameter.yml          # Workspace-specific configuration
+│   ├── config.yml             # Workspace names per environment
+│   ├── parameter.yml          # ID transformation rules
 │   ├── 1_Bronze/
 │   ├── 2_Silver/
 │   ├── 3_Gold/
 │   └── 4_Analytics/
 ├── Analytics Hub/
+│   ├── config.yml
 │   ├── parameter.yml
 │   └── ...
 └── Data Engineering/
+    ├── config.yml
     ├── parameter.yml
     └── ...
 ```
 
-**Workspace Naming**: Names are dynamically constructed with stage prefixes:
-- Dev: `[D] <folder-name>` (e.g., `[D] Fabric Blueprint`)
-- Test: `[T] <folder-name>` (e.g., `[T] Fabric Blueprint`)
-- Prod: `[P] <folder-name>` (e.g., `[P] Fabric Blueprint`)
+**Workspace Naming**: Names are explicitly configured in `config.yml` per workspace folder:
+- Dev: Defined in `config.yml` under `core.workspace.dev` (e.g., `[D] Fabric Blueprint`)
+- Test: Defined in `config.yml` under `core.workspace.test` (e.g., `[T] Fabric Blueprint`)
+- Prod: Defined in `config.yml` under `core.workspace.prod` (e.g., `[P] Fabric Blueprint`)
 
 **Atomic Rollback**: If any workspace deployment fails, all previously deployed workspaces in that run are automatically rolled back.
 
@@ -83,8 +86,8 @@ This architecture uses **Git-based deployments with Build environments** for con
 
 - **Multiple workspaces per repository**: Each workspace folder in `workspaces/` is a separate deployment target
 - **Separate workspaces per stage**: Dev, Test, Prod workspaces with different capacities for each workspace folder
-- **Dynamic workspace naming**: No GitHub variables needed - workspace names generated from folder names with stage prefixes
-- **Workspace-specific configuration**: Each workspace has its own `parameter.yml` file
+- **Explicit workspace naming**: Workspace names defined in `config.yml` per environment
+- **Dual configuration approach**: Each workspace has `config.yml` (deployment config) and `parameter.yml` (ID transformations)
 - **Parameterize everything**: All stage-specific configs (connections, lakehouse IDs, data sources) must be parameterizable
 - **Small, frequent merges to main**: Keep feature branches short-lived
 - **Commit related changes together**: Group changes that must deploy atomically across workspaces
@@ -555,7 +558,7 @@ find_replace:
 **Always use:**
 - GitHub Secrets for sensitive values (`AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, `AZURE_TENANT_ID`)
 - Environment-specific transformations via workspace `parameter.yml` files for IDs and endpoints
-- Dynamic workspace naming from folder names (no variables needed)
+- Workspace name configuration via `config.yml` per workspace folder
 
 ## Security Best Practices
 
@@ -612,9 +615,9 @@ Solution:
 **Issue: `Workspace not found` error**
 ```
 Solution:
-1. Check workspace name is generated correctly from folder name
-2. Verify stage prefix is correct: [D], [T], or [P] with space
-3. Ensure workspace folder has parameter.yml file
+1. Check workspace name is defined correctly in config.yml
+2. Verify workspace name matches target workspace in Fabric (case-sensitive)
+3. Ensure workspace folder has both config.yml and parameter.yml files
 4. Confirm workspace exists in Fabric portal
 5. Verify Service Principal has access to workspace
 ```

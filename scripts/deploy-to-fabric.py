@@ -13,8 +13,9 @@ from pathlib import Path
 from typing import List, Dict, Optional, Union, Any
 
 from azure.identity import ClientSecretCredential, DefaultAzureCredential
-from fabric_cicd import FabricWorkspace, change_log_level, publish_all_items, unpublish_all_orphan_items
+from fabric_cicd import deploy_with_config, change_log_level
 from fabric_workspace_manager import ensure_workspace_exists
+import yaml
 
 # Constants
 VALID_ENVIRONMENTS = {"dev", "test", "prod"}
@@ -27,6 +28,7 @@ SEPARATOR_LONG = "=" * 70
 SEPARATOR_SHORT = "=" * 60
 RESULTS_FILENAME = "deployment-results.json"
 PARAMETER_FILE = "parameter.yml"
+CONFIG_FILE = "config.yml"
 
 # Exit codes
 EXIT_SUCCESS = 0
@@ -46,6 +48,7 @@ ENV_ACTIONS_RUNNER_DEBUG = "ACTIONS_RUNNER_DEBUG"
 class DeploymentResult:
     """Result of a single workspace deployment."""
     workspace_folder: str
+    workspace_name: str
     success: bool
     error_message: str = ""
 
@@ -78,28 +81,54 @@ class DeploymentSummary:
         return [r for r in self.results if not r.success]
 
 
-def get_stage_prefix(environment: str) -> str:
-    """Return the stage prefix for workspace naming.
+def load_workspace_config(workspace_folder: str, workspaces_dir: str) -> Dict[str, Any]:
+    """Load config.yml for a workspace.
     
     Args:
+        workspace_folder: Name of workspace folder
+        workspaces_dir: Root workspaces directory
+        
+    Returns:
+        Parsed config dictionary
+        
+    Raises:
+        FileNotFoundError: If config.yml doesn't exist
+        yaml.YAMLError: If config.yml is invalid
+    """
+    config_path = Path(workspaces_dir) / workspace_folder / CONFIG_FILE
+    if not config_path.exists():
+        raise FileNotFoundError(f"{CONFIG_FILE} not found in {workspace_folder}")
+    
+    with open(config_path, "r", encoding="utf-8") as f:
+        config = yaml.safe_load(f)
+    
+    return config
+
+
+def get_workspace_name_from_config(
+    config: Dict[str, Any], 
+    environment: str
+) -> str:
+    """Extract workspace name for environment from config.
+    
+    Args:
+        config: Parsed config.yml dictionary
         environment: Target environment (dev/test/prod)
         
     Returns:
-        Stage prefix string
+        Workspace name for environment
         
     Raises:
-        ValueError: If environment is not valid
+        KeyError: If environment not defined in config
     """
-    env_lower = environment.lower()
-    if env_lower not in STAGE_PREFIXES:
-        raise ValueError(f"Invalid environment '{environment}'. Must be one of: {', '.join(VALID_ENVIRONMENTS)}")
-    return STAGE_PREFIXES[env_lower]
-
-
-def get_full_workspace_name(workspace_folder: str, environment: str) -> str:
-    """Get the full workspace name with stage prefix."""
-    stage_prefix = get_stage_prefix(environment)
-    return f"{stage_prefix}{workspace_folder}"
+    try:
+        workspace_name = config["core"]["workspace"][environment]
+        return workspace_name
+    except KeyError:
+        raise KeyError(
+            f"Workspace name for environment '{environment}' not found in config.yml. "
+            f"Expected: core.workspace.{environment}"
+        )
 
 
 def get_workspace_folders(workspaces_dir: str) -> List[str]:
@@ -109,7 +138,7 @@ def get_workspace_folders(workspaces_dir: str) -> List[str]:
         workspaces_dir: Root directory containing workspace folders
         
     Returns:
-        Sorted list of workspace folder names that contain parameter.yml
+        Sorted list of workspace folder names that contain config.yml
         
     Raises:
         FileNotFoundError: If workspaces directory doesn't exist
@@ -120,8 +149,11 @@ def get_workspace_folders(workspaces_dir: str) -> List[str]:
     
     workspace_folders = [
         folder.name for folder in workspaces_path.iterdir() 
-        if folder.is_dir() and (folder / PARAMETER_FILE).exists()
+        if folder.is_dir() and (folder / CONFIG_FILE).exists()
     ]
+    
+    if not workspace_folders:
+        raise ValueError(f"No workspace folders with {CONFIG_FILE} found in: {workspaces_dir}")
     
     return sorted(workspace_folders)
 
@@ -135,7 +167,7 @@ def deploy_workspace(
     service_principal_object_id: Optional[str] = None,
     entra_admin_group_id: Optional[str] = None
 ) -> DeploymentResult:
-    """Deploy a single workspace.
+    """Deploy a single workspace using config.yml.
     
     Args:
         workspace_folder: Name of the workspace folder
@@ -155,19 +187,20 @@ def deploy_workspace(
     Returns:
         DeploymentResult object with success status and error message if applicable.
     """
+    workspace_name = ""  # Initialize for error handling
     try:
-        # Construct workspace name with stage prefix
-        workspace_name = get_full_workspace_name(workspace_folder, environment)
-        
-        # Construct repository directory path
-        repository_directory = str(Path(workspaces_dir) / workspace_folder)
-        
         print(f"\n{SEPARATOR_SHORT}")
-        print(f"Deploying workspace: {workspace_name}")
-        print(f"Folder: {workspace_folder}")
-        print(f"Environment: {environment}")
-        print(f"Repository directory: {repository_directory}")
+        print(f"Deploying workspace: {workspace_folder}")
         print(f"{SEPARATOR_SHORT}\n")
+        
+        # Load workspace config
+        config = load_workspace_config(workspace_folder, workspaces_dir)
+        workspace_name = get_workspace_name_from_config(config, environment)
+        config_file_path = str(Path(workspaces_dir) / workspace_folder / CONFIG_FILE)
+        
+        print(f"→ Target workspace: {workspace_name}")
+        print(f"→ Config file: {config_file_path}")
+        print(f"→ Environment: {environment}")
         
         # Ensure workspace exists (create if necessary)
         workspace_id = ensure_workspace_exists(
@@ -179,33 +212,31 @@ def deploy_workspace(
         )
         print(f"→ Workspace ensured with ID: {workspace_id}")
         
-        # Initialize the FabricWorkspace object
-        target_workspace = FabricWorkspace(
-            workspace_name=workspace_name,
+        # Deploy using config.yml
+        print(f"→ Deploying items using config-based deployment...")
+        deploy_with_config(
+            config_file_path=config_file_path,
             environment=environment,
-            repository_directory=repository_directory,
-            token_credential=token_credential,
+            token_credential=token_credential
         )
         
-        print(f"→ Workspace initialized: {workspace_name}")
-        
-        # Publish all items defined in item_type_in_scope
-        print(f"→ Publishing all items...")
-        publish_all_items(target_workspace)
-        print(f"  ✓ All items published successfully")
-        
-        # Unpublish all items defined in item_type_in_scope not found in repository
-        print(f"→ Cleaning up orphan items...")
-        unpublish_all_orphan_items(target_workspace)
-        print(f"  ✓ Orphan items removed successfully")
-        
         print(f"\n✓ Deployment to {workspace_name} completed successfully!\n")
-        return DeploymentResult(workspace_folder=workspace_folder, success=True)
+        return DeploymentResult(
+            workspace_folder=workspace_folder,
+            workspace_name=workspace_name,
+            success=True
+        )
         
     except Exception as e:
         error_message = str(e)
-        print(f"\n✗ ERROR: Deployment failed for workspace '{workspace_folder}': {error_message}\n")
-        return DeploymentResult(workspace_folder=workspace_folder, success=False, error_message=error_message)
+        display_name = workspace_name if workspace_name else workspace_folder
+        print(f"\n✗ ERROR: Deployment failed for workspace '{display_name}': {error_message}\n")
+        return DeploymentResult(
+            workspace_folder=workspace_folder,
+            workspace_name=workspace_name if workspace_name else workspace_folder,
+            success=False,
+            error_message=error_message
+        )
 
 
 def create_azure_credential() -> Union[ClientSecretCredential, DefaultAzureCredential]:
@@ -253,8 +284,12 @@ def parse_workspace_folders(
                 raise FileNotFoundError(f"Workspace folder not found: {folder}")
             if not folder_path.is_dir():
                 raise ValueError(f"Not a directory: {folder}")
-            if not (folder_path / PARAMETER_FILE).exists():
-                raise FileNotFoundError(f"Missing {PARAMETER_FILE} in workspace: {folder}")
+            config_file = folder_path / CONFIG_FILE
+            if not config_file.exists():
+                raise FileNotFoundError(
+                    f"{CONFIG_FILE} not found in workspace folder: {folder}. "
+                    f"Expected: {config_file}"
+                )
         print(f"→ Deploying specified workspaces: {', '.join(workspace_folders)}\n")
     else:
         workspace_folders = get_workspace_folders(workspaces_directory)
@@ -286,10 +321,9 @@ def build_deployment_results_json(summary: DeploymentSummary) -> Dict[str, Any]:
     
     # Add all workspace results
     for result in summary.results:
-        full_name = get_full_workspace_name(result.workspace_folder, summary.environment)
         results_json["workspaces"].append({
             "name": result.workspace_folder,
-            "full_name": full_name,
+            "full_name": result.workspace_name,
             "status": "success" if result.success else "failure",
             "error": result.error_message
         })
@@ -320,11 +354,10 @@ def print_deployment_summary(summary: DeploymentSummary) -> None:
     successful = []
     failed = []
     for result in summary.results:
-        full_name = get_full_workspace_name(result.workspace_folder, summary.environment)
         if result.success:
-            successful.append(full_name)
+            successful.append(result.workspace_name)
         else:
-            failed.append((full_name, result.error_message))
+            failed.append((result.workspace_name, result.error_message))
     
     if successful:
         print("\n✓ SUCCESSFUL DEPLOYMENTS:")

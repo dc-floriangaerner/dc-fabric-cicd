@@ -39,14 +39,14 @@ Each subfolder in `workspaces/` represents a separate Fabric workspace with its 
 
 ### Workspace Naming Convention
 
-Workspace names are dynamically constructed with stage-specific prefixes:
+Workspace names are defined in each workspace's `config.yml` file for each environment:
 
 | Folder | Dev Workspace | Test Workspace | Prod Workspace |
 |--------|---------------|----------------|----------------|
 | `Fabric Blueprint` | `[D] Fabric Blueprint` | `[T] Fabric Blueprint` | `[P] Fabric Blueprint` |
 | `Analytics Hub` | `[D] Analytics Hub` | `[T] Analytics Hub` | `[P] Analytics Hub` |
 
-No GitHub variables needed - names are automatically generated from folder names.
+Workspace names are explicitly configured in `config.yml` per workspace folder - not auto-generated from folder names.
 
 
 ## Prerequisites
@@ -316,8 +316,8 @@ This allows each workspace to have different transformation rules independent of
 
 **Workspace not found error**
 - If automatic workspace creation is enabled: Check capacity ID secrets and Workspace Creator permission
-- If manual creation: Ensure target workspace exists in Fabric with correct name (including stage prefix)
-- Verify workspace name matches folder name exactly (case-sensitive)
+- If manual creation: Ensure target workspace exists in Fabric with correct name
+- Verify workspace name in `config.yml` matches actual workspace name (case-sensitive)
 - Check Service Principal has access to the workspace
 
 **Workspace creation fails**
