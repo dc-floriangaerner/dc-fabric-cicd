@@ -1,0 +1,6 @@
+# Python dependencies for Fabric CI/CD deployment scripts
+# These packages are required for deploying Fabric workspaces via GitHub Actions
+
+fabric-cicd
+azure-identity
+requests
