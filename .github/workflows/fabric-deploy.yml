@@ -71,12 +71,15 @@ jobs:
         include:
           - environment: dev
             environment_name: Dev
+            capacity_id_secret: FABRIC_CAPACITY_ID_DEV
             trigger_condition: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.environment == 'dev') }}
           - environment: test
             environment_name: Test
+            capacity_id_secret: FABRIC_CAPACITY_ID_TEST
             trigger_condition: ${{ github.event_name == 'workflow_dispatch' && inputs.environment == 'test' }}
           - environment: prod
             environment_name: Production
+            capacity_id_secret: FABRIC_CAPACITY_ID_PROD
             trigger_condition: ${{ github.event_name == 'workflow_dispatch' && inputs.environment == 'prod' }}
     environment:
       name: ${{ matrix.environment }}
@@ -104,9 +107,7 @@ jobs:
           AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
           AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
           AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
-          FABRIC_CAPACITY_ID_DEV: ${{ secrets.FABRIC_CAPACITY_ID_DEV }}
-          FABRIC_CAPACITY_ID_TEST: ${{ secrets.FABRIC_CAPACITY_ID_TEST }}
-          FABRIC_CAPACITY_ID_PROD: ${{ secrets.FABRIC_CAPACITY_ID_PROD }}
+          ${{ matrix.capacity_id_secret }}: ${{ secrets[matrix.capacity_id_secret] }}
           DEPLOYMENT_SP_OBJECT_ID: ${{ secrets.DEPLOYMENT_SP_OBJECT_ID }}
           FABRIC_ADMIN_GROUP_ID: ${{ secrets.FABRIC_ADMIN_GROUP_ID }}
 
