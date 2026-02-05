@@ -8,34 +8,119 @@ import json
 import os
 import sys
 import time
+from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Union, Any
 
 from azure.identity import ClientSecretCredential, DefaultAzureCredential
 from fabric_cicd import FabricWorkspace, change_log_level, publish_all_items, unpublish_all_orphan_items
 from fabric_workspace_manager import ensure_workspace_exists
 
+# Constants
+VALID_ENVIRONMENTS = {"dev", "test", "prod"}
+STAGE_PREFIXES = {
+    "dev": "[D] ",
+    "test": "[T] ",
+    "prod": "[P] "
+}
+SEPARATOR_LONG = "=" * 70
+SEPARATOR_SHORT = "=" * 60
+RESULTS_FILENAME = "deployment-results.json"
+PARAMETER_FILE = "parameter.yml"
+
+# Exit codes
+EXIT_SUCCESS = 0
+EXIT_FAILURE = 1
+
+# Environment variable names
+ENV_AZURE_CLIENT_ID = "AZURE_CLIENT_ID"
+ENV_AZURE_TENANT_ID = "AZURE_TENANT_ID"
+ENV_AZURE_CLIENT_SECRET = "AZURE_CLIENT_SECRET"
+ENV_FABRIC_CAPACITY_ID = "FABRIC_CAPACITY_ID"
+ENV_DEPLOYMENT_SP_OBJECT_ID = "DEPLOYMENT_SP_OBJECT_ID"
+ENV_FABRIC_ADMIN_GROUP_ID = "FABRIC_ADMIN_GROUP_ID"
+ENV_ACTIONS_RUNNER_DEBUG = "ACTIONS_RUNNER_DEBUG"
+
+
+@dataclass
+class DeploymentResult:
+    """Result of a single workspace deployment."""
+    workspace_folder: str
+    success: bool
+    error_message: str = ""
+
+
+@dataclass
+class DeploymentSummary:
+    """Summary of all workspace deployments."""
+    environment: str
+    duration: float
+    results: List[DeploymentResult]
+    
+    @property
+    def total_workspaces(self) -> int:
+        return len(self.results)
+    
+    @property
+    def successful_count(self) -> int:
+        return sum(1 for r in self.results if r.success)
+    
+    @property
+    def failed_count(self) -> int:
+        return sum(1 for r in self.results if not r.success)
+    
+    @property
+    def successful_workspaces(self) -> List[str]:
+        return [r.workspace_folder for r in self.results if r.success]
+    
+    @property
+    def failed_results(self) -> List[DeploymentResult]:
+        return [r for r in self.results if not r.success]
+
 
 def get_stage_prefix(environment: str) -> str:
-    """Return the stage prefix for workspace naming."""
-    prefixes = {
-        "dev": "[D] ",
-        "test": "[T] ",
-        "prod": "[P] "
-    }
-    return prefixes.get(environment.lower(), "")
+    """Return the stage prefix for workspace naming.
+    
+    Args:
+        environment: Target environment (dev/test/prod)
+        
+    Returns:
+        Stage prefix string
+        
+    Raises:
+        ValueError: If environment is not valid
+    """
+    env_lower = environment.lower()
+    if env_lower not in STAGE_PREFIXES:
+        raise ValueError(f"Invalid environment '{environment}'. Must be one of: {', '.join(VALID_ENVIRONMENTS)}")
+    return STAGE_PREFIXES[env_lower]
+
+
+def get_full_workspace_name(workspace_folder: str, environment: str) -> str:
+    """Get the full workspace name with stage prefix."""
+    stage_prefix = get_stage_prefix(environment)
+    return f"{stage_prefix}{workspace_folder}"
 
 
 def get_workspace_folders(workspaces_dir: str) -> List[str]:
-    """Get all workspace folders from the workspaces directory."""
+    """Get all workspace folders from the workspaces directory.
+    
+    Args:
+        workspaces_dir: Root directory containing workspace folders
+        
+    Returns:
+        Sorted list of workspace folder names that contain parameter.yml
+        
+    Raises:
+        FileNotFoundError: If workspaces directory doesn't exist
+    """
     workspaces_path = Path(workspaces_dir)
     if not workspaces_path.exists():
-        print(f"ERROR: Workspaces directory not found: {workspaces_dir}")
-        return []
+        raise FileNotFoundError(f"Workspaces directory not found: {workspaces_dir}")
     
     workspace_folders = [
         folder.name for folder in workspaces_path.iterdir() 
-        if folder.is_dir() and (folder / "parameter.yml").exists()
+        if folder.is_dir() and (folder / PARAMETER_FILE).exists()
     ]
     
     return sorted(workspace_folders)
@@ -45,11 +130,11 @@ def deploy_workspace(
     workspace_folder: str,
     workspaces_dir: str,
     environment: str,
-    token_credential,
-    capacity_id: str = None,
-    service_principal_object_id: str = None,
-    entra_admin_group_id: str = None
-) -> tuple[bool, str]:
+    token_credential: Union[ClientSecretCredential, DefaultAzureCredential],
+    capacity_id: Optional[str] = None,
+    service_principal_object_id: Optional[str] = None,
+    entra_admin_group_id: Optional[str] = None
+) -> DeploymentResult:
     """Deploy a single workspace.
     
     Args:
@@ -68,22 +153,21 @@ def deploy_workspace(
             admin permissions. If provided, the group will be assigned as a workspace admin.
         
     Returns:
-        Tuple of (success: bool, error_message: str). Error message is empty string if successful.
+        DeploymentResult object with success status and error message if applicable.
     """
     try:
         # Construct workspace name with stage prefix
-        stage_prefix = get_stage_prefix(environment)
-        workspace_name = f"{stage_prefix}{workspace_folder}"
+        workspace_name = get_full_workspace_name(workspace_folder, environment)
         
         # Construct repository directory path
-        repository_directory = os.path.join(workspaces_dir, workspace_folder)
+        repository_directory = str(Path(workspaces_dir) / workspace_folder)
         
-        print(f"\n{'='*60}")
+        print(f"\n{SEPARATOR_SHORT}")
         print(f"Deploying workspace: {workspace_name}")
         print(f"Folder: {workspace_folder}")
         print(f"Environment: {environment}")
         print(f"Repository directory: {repository_directory}")
-        print(f"{'='*60}\n")
+        print(f"{SEPARATOR_SHORT}\n")
         
         # Ensure workspace exists (create if necessary)
         workspace_id = ensure_workspace_exists(
@@ -116,12 +200,204 @@ def deploy_workspace(
         print(f"  ✓ Orphan items removed successfully")
         
         print(f"\n✓ Deployment to {workspace_name} completed successfully!\n")
-        return True, ""
+        return DeploymentResult(workspace_folder=workspace_folder, success=True)
         
     except Exception as e:
         error_message = str(e)
         print(f"\n✗ ERROR: Deployment failed for workspace '{workspace_folder}': {error_message}\n")
-        return False, error_message
+        return DeploymentResult(workspace_folder=workspace_folder, success=False, error_message=error_message)
+
+
+def create_azure_credential() -> Union[ClientSecretCredential, DefaultAzureCredential]:
+    """Create and return the appropriate Azure credential based on environment."""
+    client_id = os.getenv(ENV_AZURE_CLIENT_ID)
+    tenant_id = os.getenv(ENV_AZURE_TENANT_ID)
+    client_secret = os.getenv(ENV_AZURE_CLIENT_SECRET)
+    
+    if client_id and tenant_id and client_secret:
+        print("→ Using ClientSecretCredential for authentication")
+        return ClientSecretCredential(
+            tenant_id=tenant_id,
+            client_id=client_id,
+            client_secret=client_secret
+        )
+    else:
+        print("→ Using DefaultAzureCredential for authentication (local development)")
+        return DefaultAzureCredential()
+
+
+def parse_workspace_folders(
+    workspace_folders_arg: Optional[str],
+    workspaces_directory: str
+) -> List[str]:
+    """Parse and return the list of workspace folders to deploy.
+    
+    Args:
+        workspace_folders_arg: Comma-separated list of workspace folders or None for all
+        workspaces_directory: Root directory containing workspace folders
+        
+    Returns:
+        List of workspace folder names to deploy
+        
+    Raises:
+        ValueError: If no workspace folders are found or specified folders are invalid
+        FileNotFoundError: If workspace folder or parameter file doesn't exist
+    """
+    if workspace_folders_arg:
+        workspace_folders = [f.strip() for f in workspace_folders_arg.split(",")]
+        # Validate that specified folders exist and have parameter.yml
+        workspaces_path = Path(workspaces_directory)
+        for folder in workspace_folders:
+            folder_path = workspaces_path / folder
+            if not folder_path.exists():
+                raise FileNotFoundError(f"Workspace folder not found: {folder}")
+            if not folder_path.is_dir():
+                raise ValueError(f"Not a directory: {folder}")
+            if not (folder_path / PARAMETER_FILE).exists():
+                raise FileNotFoundError(f"Missing {PARAMETER_FILE} in workspace: {folder}")
+        print(f"→ Deploying specified workspaces: {', '.join(workspace_folders)}\n")
+    else:
+        workspace_folders = get_workspace_folders(workspaces_directory)
+        print(f"→ Deploying all workspaces: {', '.join(workspace_folders)}\n")
+    
+    if not workspace_folders:
+        raise ValueError("No workspace folders found to deploy")
+    
+    return workspace_folders
+
+
+def build_deployment_results_json(summary: DeploymentSummary) -> Dict[str, Any]:
+    """Build the deployment results dictionary for JSON output.
+    
+    Args:
+        summary: Deployment summary object
+        
+    Returns:
+        Dictionary containing deployment results for JSON serialization
+    """
+    results_json = {
+        "environment": summary.environment,
+        "duration": summary.duration,
+        "total_workspaces": summary.total_workspaces,
+        "successful_count": summary.successful_count,
+        "failed_count": summary.failed_count,
+        "workspaces": []
+    }
+    
+    # Add all workspace results
+    for result in summary.results:
+        full_name = get_full_workspace_name(result.workspace_folder, summary.environment)
+        results_json["workspaces"].append({
+            "name": result.workspace_folder,
+            "full_name": full_name,
+            "status": "success" if result.success else "failure",
+            "error": result.error_message
+        })
+    
+    # Sort workspaces by name for consistent output
+    results_json["workspaces"].sort(key=lambda x: x["name"])
+    
+    return results_json
+
+
+def print_deployment_summary(summary: DeploymentSummary) -> None:
+    """Print comprehensive deployment summary to console.
+    
+    Args:
+        summary: Deployment summary containing all results and metrics
+    """
+    print(f"\n{SEPARATOR_LONG}")
+    print("DEPLOYMENT SUMMARY")
+    print(SEPARATOR_LONG)
+    print(f"Environment: {summary.environment.upper()}")
+    print(f"Duration: {summary.duration:.2f} seconds")
+    print(f"Total workspaces: {summary.total_workspaces}")
+    print(f"Successful: {summary.successful_count}")
+    print(f"Failed: {summary.failed_count}")
+    print(SEPARATOR_LONG)
+    
+    # Report successful and failed deployments by iterating through results once
+    successful = []
+    failed = []
+    for result in summary.results:
+        full_name = get_full_workspace_name(result.workspace_folder, summary.environment)
+        if result.success:
+            successful.append(full_name)
+        else:
+            failed.append((full_name, result.error_message))
+    
+    if successful:
+        print("\n✓ SUCCESSFUL DEPLOYMENTS:")
+        for full_name in successful:
+            print(f"  ✓ {full_name}")
+    
+    if failed:
+        print("\n✗ FAILED DEPLOYMENTS:")
+        for full_name, error in failed:
+            print(f"  ✗ {full_name}")
+            print(f"    Error: {error}")
+    
+    print(f"\n{SEPARATOR_LONG}")
+
+
+def validate_environment(environment: str) -> None:
+    """Validate that the environment is one of the expected values.
+    
+    Args:
+        environment: Environment name to validate
+        
+    Raises:
+        ValueError: If environment is not valid
+    """
+    if environment.lower() not in VALID_ENVIRONMENTS:
+        raise ValueError(
+            f"Invalid environment '{environment}'. "
+            f"Must be one of: {', '.join(sorted(VALID_ENVIRONMENTS))}"
+        )
+
+
+def deploy_all_workspaces(
+    workspace_folders: List[str],
+    workspaces_directory: str,
+    environment: str,
+    token_credential: Union[ClientSecretCredential, DefaultAzureCredential],
+    capacity_id: Optional[str],
+    service_principal_object_id: Optional[str],
+    entra_admin_group_id: Optional[str]
+) -> List[DeploymentResult]:
+    """Deploy all specified workspaces and return results.
+    
+    Args:
+        workspace_folders: List of workspace folder names to deploy
+        workspaces_directory: Root directory containing workspace folders
+        environment: Target environment (dev/test/prod)
+        token_credential: Azure credential for authentication
+        capacity_id: Optional Fabric workspace capacity ID for creation
+        service_principal_object_id: Optional service principal object ID for role assignment
+        entra_admin_group_id: Optional Entra ID group ID for admin permissions
+        
+    Returns:
+        List of DeploymentResult objects, one per workspace
+    """
+    results: List[DeploymentResult] = []
+    
+    print(f"Starting deployment of {len(workspace_folders)} workspace(s)...\n")
+    for i, workspace_folder in enumerate(workspace_folders, 1):
+        print(f"[{i}/{len(workspace_folders)}] Processing workspace: {workspace_folder}")
+        
+        result = deploy_workspace(
+            workspace_folder=workspace_folder,
+            workspaces_dir=workspaces_directory,
+            environment=environment,
+            token_credential=token_credential,
+            capacity_id=capacity_id,
+            service_principal_object_id=service_principal_object_id,
+            entra_admin_group_id=entra_admin_group_id
+        )
+        
+        results.append(result)
+    
+    return results
 
 
 def main():
@@ -146,158 +422,78 @@ def main():
     sys.stderr.reconfigure(line_buffering=True, write_through=True)
     
     # Enable debugging if ACTIONS_RUNNER_DEBUG is set
-    if os.getenv("ACTIONS_RUNNER_DEBUG", "false").lower() == "true":
+    if os.getenv(ENV_ACTIONS_RUNNER_DEBUG, "false").lower() == "true":
         change_log_level("DEBUG")
     
-    print("\n" + "="*70)
+    print(f"\n{SEPARATOR_LONG}")
     print("FABRIC MULTI-WORKSPACE DEPLOYMENT")
-    print("="*70)
+    print(SEPARATOR_LONG)
     print(f"Environment: {environment.upper()}")
     print(f"Workspaces directory: {workspaces_directory}")
-    print("="*70 + "\n")
+    print(f"{SEPARATOR_LONG}\n")
     
     try:
-        # Authenticate
-        client_id = os.getenv("AZURE_CLIENT_ID")
-        tenant_id = os.getenv("AZURE_TENANT_ID")
-        client_secret = os.getenv("AZURE_CLIENT_SECRET")
+        # Validate environment
+        validate_environment(environment)
         
-        if client_id and tenant_id and client_secret:
-            print("→ Using ClientSecretCredential for authentication")
-            token_credential = ClientSecretCredential(
-                tenant_id=tenant_id,
-                client_id=client_id,
-                client_secret=client_secret
-            )
-        else:
-            print("→ Using DefaultAzureCredential for authentication (local development)")
-            token_credential = DefaultAzureCredential()
+        # Authenticate
+        token_credential = create_azure_credential()
         
         # Get workspace creation configuration from environment
-        capacity_id = os.getenv("FABRIC_CAPACITY_ID")
-        service_principal_object_id = os.getenv("DEPLOYMENT_SP_OBJECT_ID")
-        entra_admin_group_id = os.getenv("FABRIC_ADMIN_GROUP_ID")
+        capacity_id = os.getenv(ENV_FABRIC_CAPACITY_ID)
+        service_principal_object_id = os.getenv(ENV_DEPLOYMENT_SP_OBJECT_ID)
+        entra_admin_group_id = os.getenv(ENV_FABRIC_ADMIN_GROUP_ID)
         
         # Determine which workspaces to deploy
-        if workspace_folders_arg:
-            workspace_folders = [f.strip() for f in workspace_folders_arg.split(",")]
-            print(f"→ Deploying specified workspaces: {', '.join(workspace_folders)}\n")
-        else:
-            workspace_folders = get_workspace_folders(workspaces_directory)
-            print(f"→ Deploying all workspaces: {', '.join(workspace_folders)}\n")
-        
-        if not workspace_folders:
-            print("✗ ERROR: No workspace folders found to deploy")
-            sys.exit(1)
-        
-        # Track deployment results
-        deployed_workspaces: List[str] = []
-        failed_deployments: List[Dict[str, str]] = []
+        workspace_folders = parse_workspace_folders(workspace_folders_arg, workspaces_directory)
         
         # Track deployment duration
         deployment_start_time = time.time()
         
-        # Deploy each workspace (continue on failure)
-        print(f"Starting deployment of {len(workspace_folders)} workspace(s)...\n")
-        for i, workspace_folder in enumerate(workspace_folders, 1):
-            print(f"[{i}/{len(workspace_folders)}] Processing workspace: {workspace_folder}")
-            
-            success, error_message = deploy_workspace(
-                workspace_folder=workspace_folder,
-                workspaces_dir=workspaces_directory,
-                environment=environment,
-                token_credential=token_credential,
-                capacity_id=capacity_id,
-                service_principal_object_id=service_principal_object_id,
-                entra_admin_group_id=entra_admin_group_id
-            )
-            
-            if success:
-                deployed_workspaces.append(workspace_folder)
-            else:
-                failed_deployments.append({
-                    "workspace": workspace_folder,
-                    "error": error_message
-                })
+        # Deploy all workspaces
+        results = deploy_all_workspaces(
+            workspace_folders=workspace_folders,
+            workspaces_directory=workspaces_directory,
+            environment=environment,
+            token_credential=token_credential,
+            capacity_id=capacity_id,
+            service_principal_object_id=service_principal_object_id,
+            entra_admin_group_id=entra_admin_group_id
+        )
         
         # Calculate deployment duration
         deployment_duration = time.time() - deployment_start_time
         
+        # Create deployment summary
+        summary = DeploymentSummary(
+            environment=environment,
+            duration=deployment_duration,
+            results=results
+        )
+        
         # Write deployment results to JSON file for GitHub Actions summary
-        results_file = "deployment-results.json"
-        stage_prefix = get_stage_prefix(environment)
-        deployment_results = {
-            "environment": environment,
-            "duration": deployment_duration,
-            "total_workspaces": len(workspace_folders),
-            "successful_count": len(deployed_workspaces),
-            "failed_count": len(failed_deployments),
-            "workspaces": []
-        }
-        
-        # Add successful workspaces
-        for workspace in deployed_workspaces:
-            deployment_results["workspaces"].append({
-                "name": workspace,
-                "full_name": f"{stage_prefix}{workspace}",
-                "status": "success",
-                "error": ""
-            })
-        
-        # Add failed workspaces
-        for failure in failed_deployments:
-            deployment_results["workspaces"].append({
-                "name": failure["workspace"],
-                "full_name": f"{stage_prefix}{failure['workspace']}",
-                "status": "failure",
-                "error": failure["error"]
-            })
-        
-        # Sort workspaces by name for consistent output
-        deployment_results["workspaces"].sort(key=lambda x: x["name"])
-        
-        # Write to file
-        with open(results_file, "w", encoding="utf-8") as f:
-            json.dump(deployment_results, f, indent=2)
-        print(f"\n→ Deployment results written to {results_file}")
+        deployment_results_json = build_deployment_results_json(summary)
+        with open(RESULTS_FILENAME, "w", encoding="utf-8") as f:
+            json.dump(deployment_results_json, f, indent=2)
+        print(f"\n→ Deployment results written to {RESULTS_FILENAME}")
         
         # Print comprehensive deployment summary
-        print("\n" + "="*70)
-        print("DEPLOYMENT SUMMARY")
-        print("="*70)
-        print(f"Environment: {environment.upper()}")
-        print(f"Duration: {deployment_duration:.2f} seconds")
-        print(f"Total workspaces: {len(workspace_folders)}")
-        print(f"Successful: {len(deployed_workspaces)}")
-        print(f"Failed: {len(failed_deployments)}")
-        print("="*70)
-        
-        # Report successful deployments
-        if deployed_workspaces:
-            print("\n✓ SUCCESSFUL DEPLOYMENTS:")
-            for workspace in deployed_workspaces:
-                print(f"  ✓ {stage_prefix}{workspace}")
-        
-        # Report failed deployments
-        if failed_deployments:
-            print("\n✗ FAILED DEPLOYMENTS:")
-            for failure in failed_deployments:
-                print(f"  ✗ {failure['workspace']}")
-                print(f"    Error: {failure['error']}")
-        
-        print("\n" + "="*70)
+        print_deployment_summary(summary)
         
         # Exit with appropriate code
-        if failed_deployments:
-            print(f"\nDeployment completed with {len(failed_deployments)} failure(s)\n")
-            sys.exit(1)
+        if summary.failed_count > 0:
+            print(f"\nDeployment completed with {summary.failed_count} failure(s)\n")
+            sys.exit(EXIT_FAILURE)
         else:
-            print(f"\nAll {len(deployed_workspaces)} workspace(s) deployed successfully!\n")
-            sys.exit(0)
+            print(f"\nAll {summary.successful_count} workspace(s) deployed successfully!\n")
+            sys.exit(EXIT_SUCCESS)
         
+    except (ValueError, FileNotFoundError) as e:
+        print(f"\n✗ VALIDATION ERROR: {str(e)}\n")
+        sys.exit(EXIT_FAILURE)
     except Exception as e:
         print(f"\n✗ CRITICAL ERROR: {str(e)}\n")
-        sys.exit(1)
+        sys.exit(EXIT_FAILURE)
 
 
 if __name__ == "__main__":
