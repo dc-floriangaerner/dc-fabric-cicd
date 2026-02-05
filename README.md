@@ -347,6 +347,11 @@ This allows each workspace to have different transformation rules independent of
 - Check workspace `parameter.yml` doesn't have `skip_orphan_cleanup: true`
 - Verify item is in scope for deployment
 
+**Deployment not triggered**
+- Automatic Dev deployments only trigger on changes in `workspaces/**` paths
+- Changes to `.github/`, `scripts/`, `README.md` etc. will NOT trigger automatic deployment
+- Use manual workflow dispatch to deploy without workspace changes
+
 **Rollback fails after deployment error**
 - Review deployment logs to identify which workspace failed
 - Check if Service Principal has permissions to modify all workspaces

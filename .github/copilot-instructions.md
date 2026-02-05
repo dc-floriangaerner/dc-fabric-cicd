@@ -123,9 +123,10 @@ python -m json.tool "workspaces/Fabric Blueprint/1_Bronze/lakehouse_bronze.Lakeh
 
 ### Workflow Triggers
 
-- **Dev Environment**: Automatically deploys when PR is merged to `main`
+- **Dev Environment**: Automatically deploys when PR is merged to `main` with changes in `workspaces/**` paths (all workspaces deploy)
 - **Test Environment**: Manual trigger via GitHub Actions (select "test" environment)
 - **Production Environment**: Manual trigger via GitHub Actions (select "prod" environment)
+- **Non-workspace changes**: Changes to `.github/`, `scripts/`, documentation do NOT trigger automatic deployment
 
 ## Fabric MCP Server Integration
 

@@ -421,6 +421,15 @@ This ensures environments remain in a consistent state.
 - Each workspace folder must contain a `parameter.yml` file
 - Verify folder structure: `workspaces/<workspace-name>/parameter.yml`
 
+### Deployment Not Triggered
+
+**Error**: Pipeline doesn't run after merge to main
+
+**Solution**:
+- Automatic Dev deployments only trigger on changes in `workspaces/**` paths
+- Changes to `.github/`, `scripts/`, documentation do NOT trigger automatic deployment
+- Use manual workflow dispatch to deploy without workspace changes
+
 ### Item Deployment Failed
 
 **Error**: `Failed to publish item: <item-name>`

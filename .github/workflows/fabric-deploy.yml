@@ -1,8 +1,9 @@
 name: Deploy to Microsoft Fabric
 
 # Workflow triggers:
-# 1. Automatic: Push to main branch
+# 1. Automatic: Push to main branch with changes in workspaces/** paths
 #    - Deploys all workspaces to Dev environment
+#    - Changes outside workspaces/ directory do NOT trigger deployment
 # 2. Manual: workflow_dispatch with environment selection (dev/test/prod)
 #    - Deploys all workspaces to selected environment
 #    - Useful for promoting to Test/Prod or re-deploying Dev
@@ -10,6 +11,8 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'workspaces/**'
   workflow_dispatch:
     inputs:
       environment:
