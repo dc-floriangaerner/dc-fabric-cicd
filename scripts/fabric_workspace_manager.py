@@ -135,7 +135,7 @@ def _assign_workspace_role(
         )
         fabric_client.core.workspaces.add_workspace_role_assignment(
             workspace_id=workspace_id,
-            body=request
+            workspace_role_assignment_request=request
         )
         print(f"  ✓ {principal_description} added as {role} successfully")
         
