@@ -258,7 +258,7 @@ def create_fabric_client(token_credential: Union[ClientSecretCredential, Default
     Returns:
         Initialized FabricClient instance
     """
-    return FabricClient(credential=token_credential)
+    return FabricClient(token_credential=token_credential)
 
 
 def discover_workspace_folders(workspaces_directory: str) -> List[str]:
