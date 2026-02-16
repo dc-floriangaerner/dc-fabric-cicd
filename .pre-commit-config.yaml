@@ -1,0 +1,59 @@
+# Pre-commit hooks for code quality and consistency
+# See https://pre-commit.com for more information
+# See https://pre-commit.com/hooks.html for more hooks
+
+repos:
+  # Ruff - Fast Python linter and formatter
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.8.6
+    hooks:
+      # Run the linter
+      - id: ruff
+        args: [--fix, --exit-non-zero-on-fix]
+      # Run the formatter
+      - id: ruff-format
+
+  # Pre-commit hooks for general file checks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      # Check YAML files for syntax errors
+      - id: check-yaml
+        args: [--safe]
+      # Check JSON files for syntax errors
+      - id: check-json
+      # Remove trailing whitespace
+      - id: trailing-whitespace
+        args: [--markdown-linebreak-ext=md]
+      # Ensure files end with a newline
+      - id: end-of-file-fixer
+      # Check for merge conflict markers
+      - id: check-merge-conflict
+      # Check for large files (> 5MB)
+      - id: check-added-large-files
+        args: [--maxkb=5120]
+      # Ensure Python files have valid syntax
+      - id: check-ast
+      # Check for files that would conflict on case-insensitive filesystems
+      - id: check-case-conflict
+      # Detect private keys accidentally committed
+      - id: detect-private-key
+      # Ensure mixed line endings are not committed
+      - id: mixed-line-ending
+        args: [--fix=lf]
+
+  # Additional Python static analysis
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.14.1
+    hooks:
+      - id: mypy
+        additional_dependencies: [types-PyYAML]
+        args: [--ignore-missing-imports, --no-strict-optional]
+        files: ^scripts/
+
+# Global settings
+default_language_version:
+  python: python3.11
+
+# CI settings - fail fast on first error
+fail_fast: false

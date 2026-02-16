@@ -10,6 +10,10 @@ from microsoft_fabric_api.generated.core.models import (
     AddWorkspaceRoleAssignmentRequest
 )
 from azure.core.exceptions import HttpResponseError
+from .logger import get_logger
+
+# Initialize logger
+logger = get_logger(__name__)
 
 
 def check_workspace_exists(workspace_name: str, fabric_client: FabricClient) -> Optional[str]:
@@ -30,7 +34,7 @@ def check_workspace_exists(workspace_name: str, fabric_client: FabricClient) -> 
         
         for workspace in workspaces:
             if workspace.display_name == workspace_name:
-                print(f"  ✓ Workspace '{workspace_name}' already exists (ID: {workspace.id})")
+                logger.info(f"  ✓ Workspace '{workspace_name}' already exists (ID: {workspace.id})")
                 return workspace.id
         
         return None
@@ -59,7 +63,7 @@ def create_workspace(workspace_name: str, capacity_id: str, fabric_client: Fabri
             "or set the appropriate FABRIC_CAPACITY_ID_* secret in GitHub to enable auto-creation."
         )
     
-    print(f"  → Creating workspace '{workspace_name}' with capacity '{capacity_id}'...")
+    logger.info(f"  → Creating workspace '{workspace_name}' with capacity '{capacity_id}'...")
     
     try:
         request = CreateWorkspaceRequest(
@@ -74,7 +78,7 @@ def create_workspace(workspace_name: str, capacity_id: str, fabric_client: Fabri
                 "Inspect Fabric API response for details."
             )
         
-        print(f"  ✓ Workspace created successfully (ID: {response.id})")
+        logger.info(f"  ✓ Workspace created successfully (ID: {response.id})")
         return response.id
         
     except HttpResponseError as e:
@@ -153,19 +157,19 @@ def _assign_workspace_role(
     """
     if not principal_id:
         if principal_description == "Entra ID group":
-            print(f"  ℹ No {principal_description} configured. Skipping role assignment.")
+            logger.info(f"  ℹ No {principal_description} configured. Skipping role assignment.")
         else:
-            print(f"  ⚠ WARNING: {principal_description} ID not set. Skipping role assignment.")
+            logger.warning(f"  ⚠ WARNING: {principal_description} ID not set. Skipping role assignment.")
         return
     
     # Proactively check if the role assignment already exists
-    print(f"  → Checking {principal_description} {role} access...")
+    logger.info(f"  → Checking {principal_description} {role} access...")
     if check_role_assignment_exists(workspace_id, principal_id, role, fabric_client):
-        print(f"  ✓ {principal_description} already has {role} access (verified)")
+        logger.info(f"  ✓ {principal_description} already has {role} access (verified)")
         return
     
     # Role doesn't exist, add it
-    print(f"  → Granting {principal_description} {role} access...")
+    logger.info(f"  → Granting {principal_description} {role} access...")
     
     try:
         request = AddWorkspaceRoleAssignmentRequest(
@@ -179,7 +183,7 @@ def _assign_workspace_role(
             workspace_id=workspace_id,
             workspace_role_assignment_request=request
         )
-        print(f"  ✓ {principal_description} granted {role} access successfully")
+        logger.info(f"  ✓ {principal_description} granted {role} access successfully")
         
     except HttpResponseError as e:
         if e.status_code == 404:
@@ -235,6 +239,39 @@ def add_entra_id_group_admin(workspace_id: str, entra_group_id: str, fabric_clie
     )
 
 
+def assign_workspace_role(
+    workspace_id: str,
+    principal_id: str,
+    role: Literal["Admin", "Contributor", "Member"],
+    fabric_client: FabricClient,
+    principal_type: Literal["ServicePrincipal", "Group"] = "ServicePrincipal"
+) -> None:
+    """Assign a role to a principal (service principal or group) in a workspace.
+    
+    Public convenience function for assigning workspace roles.
+    Assumes service principal by default, but can be overridden for groups.
+    
+    Args:
+        workspace_id: GUID of the workspace
+        principal_id: Azure AD Object ID of the principal
+        role: Role to assign (Admin, Contributor, or Member)
+        fabric_client: Microsoft Fabric API client
+        principal_type: Type of principal (default: ServicePrincipal)
+        
+    Raises:
+        Exception: If role assignment fails
+    """
+    principal_description = "Service Principal" if principal_type == "ServicePrincipal" else "Group"
+    _assign_workspace_role(
+        workspace_id=workspace_id,
+        principal_id=principal_id,
+        principal_type=principal_type,
+        role=role,
+        fabric_client=fabric_client,
+        principal_description=principal_description
+    )
+
+
 def ensure_workspace_exists(
     workspace_name: str,
     capacity_id: str,
@@ -262,21 +299,21 @@ def ensure_workspace_exists(
         Exception: If workspace cannot be created or accessed
     """
     try:
-        print(f"→ Ensuring workspace '{workspace_name}' exists...")
+        logger.info(f"→ Ensuring workspace '{workspace_name}' exists...")
         
         workspace_id = check_workspace_exists(workspace_name, fabric_client)
         
         if workspace_id:
-            print(f"  ℹ Workspace already exists, ensuring admin access...")
+            logger.info(f"  ℹ Workspace already exists, ensuring admin access...")
         else:
-            print(f"  ℹ Workspace not found, creating new workspace...")
+            logger.info(f"  ℹ Workspace not found, creating new workspace...")
             workspace_id = create_workspace(workspace_name, capacity_id, fabric_client)
         
         # Ensure access for service principal and admin group
         add_workspace_admin(workspace_id, service_principal_object_id, fabric_client)
         add_entra_id_group_admin(workspace_id, entra_admin_group_id or "", fabric_client)
         
-        print(f"  ✓ Workspace '{workspace_name}' is ready for deployment")
+        logger.info(f"  ✓ Workspace '{workspace_name}' is ready for deployment")
         return workspace_id
         
     except Exception as e:
@@ -290,28 +327,28 @@ def _print_troubleshooting_hints(error_msg: str) -> None:
     Args:
         error_msg: Error message to analyze for troubleshooting context
     """
-    print(f"\n✗ ERROR: Failed to ensure workspace exists: {error_msg}\n")
+    logger.error(f"\n✗ ERROR: Failed to ensure workspace exists: {error_msg}\n")
     
     if "workspace creation permissions" in error_msg:
-        print("TROUBLESHOOTING:")
-        print("  1. Fabric Tenant Setting:")
-        print("     - Open Fabric Admin Portal (https://app.fabric.microsoft.com/admin-portal)")
-        print("     - Navigate to: Tenant Settings → Developer Settings")
-        print("     - Enable: 'Service principals can create workspaces, connections, and deployment pipelines'")
-        print("  2. Capacity Administrator Assignment:")
-        print("     - Open Azure Portal → Your Fabric Capacity → Settings → Capacity administrators")
-        print("     - Add the Service Principal by Client ID or Enterprise Application name")
-        print()
+        logger.info("TROUBLESHOOTING:")
+        logger.info("  1. Fabric Tenant Setting:")
+        logger.info("     - Open Fabric Admin Portal (https://app.fabric.microsoft.com/admin-portal)")
+        logger.info("     - Navigate to: Tenant Settings → Developer Settings")
+        logger.info("     - Enable: 'Service principals can create workspaces, connections, and deployment pipelines'")
+        logger.info("  2. Capacity Administrator Assignment:")
+        logger.info("     - Open Azure Portal → Your Fabric Capacity → Settings → Capacity administrators")
+        logger.info("     - Add the Service Principal by Client ID or Enterprise Application name")
+        logger.info("")
     elif "capacity" in error_msg.lower():
-        print("TROUBLESHOOTING:")
-        print("  1. Verify FABRIC_CAPACITY_ID_* secrets are set in GitHub repository")
-        print("  2. Get capacity ID from Fabric portal: Settings → Admin Portal → Capacity Settings")
-        print("  3. Ensure capacity is active and not paused")
-        print()
+        logger.info("TROUBLESHOOTING:")
+        logger.info("  1. Verify FABRIC_CAPACITY_ID_* secrets are set in GitHub repository")
+        logger.info("  2. Get capacity ID from Fabric portal: Settings → Admin Portal → Capacity Settings")
+        logger.info("  3. Ensure capacity is active and not paused")
+        logger.info("")
     elif "Object ID" in error_msg:
-        print("TROUBLESHOOTING:")
-        print("  1. Go to Azure Portal → Azure Active Directory → Enterprise Applications")
-        print("  2. Search for your application by Client ID (Application ID)")
-        print("  3. Copy the 'Object ID' field (NOT the Application ID)")
-        print("  4. Set DEPLOYMENT_SP_OBJECT_ID secret to this Object ID value")
-        print()
+        logger.info("TROUBLESHOOTING:")
+        logger.info("  1. Go to Azure Portal → Azure Active Directory → Enterprise Applications")
+        logger.info("  2. Search for your application by Client ID (Application ID)")
+        logger.info("  3. Copy the 'Object ID' field (NOT the Application ID)")
+        logger.info("  4. Set DEPLOYMENT_SP_OBJECT_ID secret to this Object ID value")
+        logger.info("")

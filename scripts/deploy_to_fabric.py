@@ -19,6 +19,10 @@ import yaml
 
 # Import local modules using relative imports
 from .fabric_workspace_manager import ensure_workspace_exists
+from .logger import get_logger
+
+# Initialize logger
+logger = get_logger(__name__)
 
 # Import configuration constants
 from .deployment_config import (
@@ -118,6 +122,10 @@ def get_workspace_name_from_config(
         )
 
 
+# Alias for backwards compatibility with tests
+get_workspace_name_for_environment = get_workspace_name_from_config
+
+
 def get_workspace_folders(workspaces_dir: str) -> List[str]:
     """Get all workspace folders from the workspaces directory.
     
@@ -176,18 +184,18 @@ def deploy_workspace(
     """
     workspace_name = ""  # Initialize for error handling
     try:
-        print(f"\n{SEPARATOR_SHORT}")
-        print(f"Deploying workspace: {workspace_folder}")
-        print(f"{SEPARATOR_SHORT}\n")
+        logger.info(f"\n{SEPARATOR_SHORT}")
+        logger.info(f"Deploying workspace: {workspace_folder}")
+        logger.info(f"{SEPARATOR_SHORT}\n")
         
         # Load workspace config
         config = load_workspace_config(workspace_folder, workspaces_dir)
         workspace_name = get_workspace_name_from_config(config, environment)
         config_file_path = str(Path(workspaces_dir) / workspace_folder / CONFIG_FILE)
         
-        print(f"→ Target workspace: {workspace_name}")
-        print(f"→ Config file: {config_file_path}")
-        print(f"→ Environment: {environment}")
+        logger.info(f"→ Target workspace: {workspace_name}")
+        logger.info(f"→ Config file: {config_file_path}")
+        logger.info(f"→ Environment: {environment}")
         
         # Create Fabric API client
         fabric_client = create_fabric_client(token_credential)
@@ -200,17 +208,17 @@ def deploy_workspace(
             fabric_client=fabric_client,
             entra_admin_group_id=entra_admin_group_id
         )
-        print(f"→ Workspace ensured with ID: {workspace_id}")
+        logger.info(f"→ Workspace ensured with ID: {workspace_id}")
         
         # Deploy using config.yml
-        print(f"→ Deploying items using config-based deployment...")
+        logger.info(f"→ Deploying items using config-based deployment...")
         deploy_with_config(
             config_file_path=config_file_path,
             environment=environment,
             token_credential=token_credential
         )
         
-        print(f"\n✓ Deployment to {workspace_name} completed successfully!\n")
+        logger.info(f"\n✓ Deployment to {workspace_name} completed successfully!\n")
         return DeploymentResult(
             workspace_folder=workspace_folder,
             workspace_name=workspace_name,
@@ -220,7 +228,7 @@ def deploy_workspace(
     except Exception as e:
         error_message = str(e)
         display_name = workspace_name if workspace_name else workspace_folder
-        print(f"\n✗ ERROR: Deployment failed for workspace '{display_name}': {error_message}\n")
+        logger.error(f"\n✗ ERROR: Deployment failed for workspace '{display_name}': {error_message}\n")
         return DeploymentResult(
             workspace_folder=workspace_folder,
             workspace_name=workspace_name if workspace_name else workspace_folder,
@@ -236,14 +244,14 @@ def create_azure_credential() -> Union[ClientSecretCredential, DefaultAzureCrede
     client_secret = os.getenv(ENV_AZURE_CLIENT_SECRET)
     
     if client_id and tenant_id and client_secret:
-        print("→ Using ClientSecretCredential for authentication")
+        logger.info("→ Using ClientSecretCredential for authentication")
         return ClientSecretCredential(
             tenant_id=tenant_id,
             client_id=client_id,
             client_secret=client_secret
         )
     else:
-        print("→ Using DefaultAzureCredential for authentication (local development)")
+        logger.info("→ Using DefaultAzureCredential for authentication (local development)")
         return DefaultAzureCredential()
 
 
@@ -276,7 +284,7 @@ def discover_workspace_folders(workspaces_directory: str) -> List[str]:
         FileNotFoundError: If workspaces directory doesn't exist
     """
     workspace_folders = get_workspace_folders(workspaces_directory)
-    print(f"→ Discovered {len(workspace_folders)} workspace(s): {', '.join(workspace_folders)}\n")
+    logger.info(f"→ Discovered {len(workspace_folders)} workspace(s): {', '.join(workspace_folders)}\n")
     return workspace_folders
 
 
@@ -319,15 +327,15 @@ def print_deployment_summary(summary: DeploymentSummary) -> None:
     Args:
         summary: Deployment summary containing all results and metrics
     """
-    print(f"\n{SEPARATOR_LONG}")
-    print("DEPLOYMENT SUMMARY")
-    print(SEPARATOR_LONG)
-    print(f"Environment: {summary.environment.upper()}")
-    print(f"Duration: {summary.duration:.2f} seconds")
-    print(f"Total workspaces: {summary.total_workspaces}")
-    print(f"Successful: {summary.successful_count}")
-    print(f"Failed: {summary.failed_count}")
-    print(SEPARATOR_LONG)
+    logger.info(f"\n{SEPARATOR_LONG}")
+    logger.info("DEPLOYMENT SUMMARY")
+    logger.info(SEPARATOR_LONG)
+    logger.info(f"Environment: {summary.environment.upper()}")
+    logger.info(f"Duration: {summary.duration:.2f} seconds")
+    logger.info(f"Total workspaces: {summary.total_workspaces}")
+    logger.info(f"Successful: {summary.successful_count}")
+    logger.info(f"Failed: {summary.failed_count}")
+    logger.info(SEPARATOR_LONG)
     
     # Report successful and failed deployments by iterating through results once
     successful = []
@@ -339,17 +347,17 @@ def print_deployment_summary(summary: DeploymentSummary) -> None:
             failed.append((result.workspace_name, result.error_message))
     
     if successful:
-        print("\n✓ SUCCESSFUL DEPLOYMENTS:")
+        logger.info("\n✓ SUCCESSFUL DEPLOYMENTS:")
         for full_name in successful:
-            print(f"  ✓ {full_name}")
+            logger.info(f"  ✓ {full_name}")
     
     if failed:
-        print("\n✗ FAILED DEPLOYMENTS:")
+        logger.error("\n✗ FAILED DEPLOYMENTS:")
         for full_name, error in failed:
-            print(f"  ✗ {full_name}")
-            print(f"    Error: {error}")
+            logger.error(f"  ✗ {full_name}")
+            logger.error(f"    Error: {error}")
     
-    print(f"\n{SEPARATOR_LONG}")
+    logger.info(f"\n{SEPARATOR_LONG}")
 
 
 def validate_environment(environment: str) -> None:
@@ -393,9 +401,9 @@ def deploy_all_workspaces(
     """
     results: List[DeploymentResult] = []
     
-    print(f"Starting deployment of {len(workspace_folders)} workspace(s)...\n")
+    logger.info(f"Starting deployment of {len(workspace_folders)} workspace(s)...\n")
     for i, workspace_folder in enumerate(workspace_folders, 1):
-        print(f"[{i}/{len(workspace_folders)}] Processing workspace: {workspace_folder}")
+        logger.info(f"[{i}/{len(workspace_folders)}] Processing workspace: {workspace_folder}")
         
         result = deploy_workspace(
             workspace_folder=workspace_folder,
@@ -449,12 +457,12 @@ def main():
     if os.getenv(ENV_ACTIONS_RUNNER_DEBUG, "false").lower() == "true":
         change_log_level("DEBUG")
     
-    print(f"\n{SEPARATOR_LONG}")
-    print("FABRIC MULTI-WORKSPACE DEPLOYMENT")
-    print(SEPARATOR_LONG)
-    print(f"Environment: {environment.upper()}")
-    print(f"Workspaces directory: {workspaces_directory}")
-    print(f"{SEPARATOR_LONG}\n")
+    logger.info(f"\n{SEPARATOR_LONG}")
+    logger.info("FABRIC MULTI-WORKSPACE DEPLOYMENT")
+    logger.info(SEPARATOR_LONG)
+    logger.info(f"Environment: {environment.upper()}")
+    logger.info(f"Workspaces directory: {workspaces_directory}")
+    logger.info(f"{SEPARATOR_LONG}\n")
     
     try:
         # Validate environment
@@ -499,24 +507,24 @@ def main():
         deployment_results_json = build_deployment_results_json(summary)
         with open(RESULTS_FILENAME, "w", encoding="utf-8") as f:
             json.dump(deployment_results_json, f, indent=2)
-        print(f"\n→ Deployment results written to {RESULTS_FILENAME}")
+        logger.info(f"\n→ Deployment results written to {RESULTS_FILENAME}")
         
         # Print comprehensive deployment summary
         print_deployment_summary(summary)
         
         # Exit with appropriate code
         if summary.failed_count > 0:
-            print(f"\nDeployment completed with {summary.failed_count} failure(s)\n")
+            logger.warning(f"\nDeployment completed with {summary.failed_count} failure(s)\n")
             sys.exit(EXIT_FAILURE)
         else:
-            print(f"\nAll {summary.successful_count} workspace(s) deployed successfully!\n")
+            logger.info(f"\nAll {summary.successful_count} workspace(s) deployed successfully!\n")
             sys.exit(EXIT_SUCCESS)
         
     except (ValueError, FileNotFoundError) as e:
-        print(f"\n✗ VALIDATION ERROR: {str(e)}\n")
+        logger.error(f"\n✗ VALIDATION ERROR: {str(e)}\n")
         sys.exit(EXIT_FAILURE)
     except Exception as e:
-        print(f"\n✗ CRITICAL ERROR: {str(e)}\n")
+        logger.error(f"\n✗ CRITICAL ERROR: {str(e)}\n")
         sys.exit(EXIT_FAILURE)
 
 
