@@ -11,7 +11,7 @@ Common issues and solutions for Fabric CI/CD deployments.
 **Causes**:
 - Incorrect GitHub secrets (AZURE_CLIENT_ID, AZURE_CLIENT_SECRET, AZURE_TENANT_ID)
 - Service Principal doesn't have Fabric workspace access
-- Service Principal created in wrong Azure AD tenant
+- Service Principal created in wrong Microsoft Entra ID tenant
 - Client secret expired
 
 **Solutions**:
@@ -22,7 +22,7 @@ Common issues and solutions for Fabric CI/CD deployments.
    - Open Fabric workspace → Workspace settings → Manage access
    - Ensure Service Principal has Admin or Contributor role
 3. Check Service Principal tenant:
-   - Azure Portal → Azure Active Directory → App registrations
+   - Azure Portal → Microsoft Entra ID → App registrations
    - Verify tenant ID matches AZURE_TENANT_ID secret
 4. Check client secret expiration:
    - Azure Portal → App registrations → Your app → Certificates & secrets
@@ -137,12 +137,12 @@ Common issues and solutions for Fabric CI/CD deployments.
 **Error**: Old items remain in workspace after removal from repository
 
 **Causes**:
-- Orphan cleanup is disabled in `parameter.yml`
+- Orphan cleanup is disabled in `config.yml`
 - Item type not in scope for deployment
 - Service Principal lacks delete permissions
 
 **Solutions**:
-1. Check `parameter.yml` for cleanup settings:
+1. Check `config.yml` for cleanup settings:
    ```yaml
    unpublish:
      skip:
