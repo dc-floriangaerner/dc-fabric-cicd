@@ -1,7 +1,7 @@
 # Python dependencies for Fabric CI/CD deployment scripts
 # These packages are required for deploying Fabric workspaces via GitHub Actions
 
-fabric-cicd
-azure-identity
+fabric-cicd==0.1.34
+azure-identity==1.25.2
 microsoft-fabric-api==0.1.0b2
-pyyaml
+pyyaml==6.0.3
