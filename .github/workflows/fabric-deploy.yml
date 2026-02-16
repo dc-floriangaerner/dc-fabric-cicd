@@ -79,7 +79,7 @@ jobs:
       - name: Deploy to Fabric
         id: deploy
         run: |
-          python -u scripts/deploy-to-fabric.py \
+          python -u -m scripts.deploy_to_fabric \
             --workspaces_directory "${{ env.WORKSPACES_DIRECTORY }}" \
             --environment "${{ steps.set-env.outputs.environment }}"
         env:
@@ -94,6 +94,6 @@ jobs:
         if: always()
         run: |
           # Generate deployment summary using reusable script
-          bash scripts/generate-deployment-summary.sh "${{ steps.set-env.outputs.environment }}" "${{ steps.set-env.outputs.trigger_type }}"
+          bash scripts/generate_deployment_summary.sh "${{ steps.set-env.outputs.environment }}" "${{ steps.set-env.outputs.trigger_type }}"
         env:
           JOB_STATUS: ${{ job.status }}
