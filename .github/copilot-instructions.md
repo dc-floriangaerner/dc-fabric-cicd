@@ -104,7 +104,7 @@ This architecture uses **Git-based deployments with Build environments** for con
 pip install fabric-cicd azure-identity  # Install dependencies
 
 # Local Development - Deploys all workspaces with config.yml
-python scripts/deploy-to-fabric.py \
+python -m scripts.deploy_to_fabric \
   --workspaces_directory workspaces \
   --environment dev
 
@@ -433,11 +433,11 @@ After deployment, validate that:
 
 ### Deployment Script Validation
 
-The `scripts/deploy-to-fabric.py` script can be validated locally:
+The `scripts/deploy_to_fabric.py` script can be validated locally:
 
 ```bash
 # View available arguments
-python scripts/deploy-to-fabric.py --help
+python -m scripts.deploy_to_fabric --help
 
 # Validate parameter.yml syntax
 python -c "import yaml; yaml.safe_load(open('parameter.yml'))"
