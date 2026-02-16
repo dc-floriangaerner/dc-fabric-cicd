@@ -1,0 +1,82 @@
+name: Sync Wiki
+
+# Workflow triggers:
+# 1. Automatic: Push to main branch with changes in wiki/** paths
+# 2. Manual: workflow_dispatch for manual wiki sync
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'wiki/**'
+  workflow_dispatch:
+
+# Permissions needed to push to wiki repository
+permissions:
+  contents: write
+
+jobs:
+  sync-wiki:
+    name: Sync Wiki Content
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Clone wiki repository
+        run: |
+          echo "Cloning wiki repository..."
+          git clone https://github.com/${{ github.repository }}.wiki.git wiki-repo
+          cd wiki-repo
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Sync wiki content
+        run: |
+          echo "Syncing wiki content from /wiki to wiki repository..."
+          
+          # Remove all existing markdown files in wiki repo (except .git)
+          cd wiki-repo
+          find . -maxdepth 1 -type f -name "*.md" -delete
+          
+          # Copy all markdown files from /wiki to wiki repo
+          cp -v ../wiki/*.md .
+          
+          # Show what changed
+          echo "Changes to be committed:"
+          git status --short
+
+      - name: Commit and push changes
+        run: |
+          cd wiki-repo
+          
+          # Check if there are changes to commit
+          if [[ -z $(git status --porcelain) ]]; then
+            echo "No changes to wiki content"
+            exit 0
+          fi
+          
+          # Commit and push changes
+          git add .
+          git commit -m "Sync wiki from main repository (commit: ${{ github.sha }})"
+          
+          echo "Pushing changes to wiki repository..."
+          git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.wiki.git
+
+      - name: Deployment Summary
+        if: always()
+        run: |
+          if [ -d "wiki-repo" ]; then
+            cd wiki-repo
+            FILE_COUNT=$(find . -maxdepth 1 -type f -name "*.md" | wc -l)
+            echo "### Wiki Sync Summary" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "✅ Successfully synced $FILE_COUNT wiki pages" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Wiki URL**: https://github.com/${{ github.repository }}/wiki" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "### Wiki Sync Summary" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "❌ Wiki sync failed" >> $GITHUB_STEP_SUMMARY
+          fi

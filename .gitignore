@@ -50,3 +50,6 @@ env/
 
 # GitHub Actions
 .github/workflows/*.log
+
+# Wiki sync temporary directory
+wiki-repo/

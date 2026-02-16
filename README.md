@@ -394,6 +394,33 @@ find_replace:
 - `Environment` - Spark compute environments
 - `DataAgent` - AI agent definitions
 
+## Documentation
+
+### GitHub Wiki
+
+Comprehensive documentation is maintained in the [GitHub Wiki](https://github.com/dc-floriangaerner/fabric-cicd/wiki):
+
+- **[Home](https://github.com/dc-floriangaerner/fabric-cicd/wiki/Home)** - Wiki overview and quick links
+- **[Setup Guide](https://github.com/dc-floriangaerner/fabric-cicd/wiki/Setup-Guide)** - Step-by-step setup instructions
+- **[Workspace Configuration](https://github.com/dc-floriangaerner/fabric-cicd/wiki/Workspace-Configuration)** - Configure workspaces with config.yml and parameter.yml
+- **[Deployment Workflow](https://github.com/dc-floriangaerner/fabric-cicd/wiki/Deployment-Workflow)** - Understand the CI/CD pipeline
+- **[Troubleshooting](https://github.com/dc-floriangaerner/fabric-cicd/wiki/Troubleshooting)** - Common issues and solutions
+
+### Editing Wiki Documentation
+
+Wiki documentation is maintained in the `/wiki` folder in this repository. When you make changes to markdown files in `/wiki` and merge to `main`, they are automatically synced to the GitHub Wiki via a GitHub Actions workflow.
+
+**Workflow:**
+1. Edit markdown files in the `/wiki` folder
+2. Commit changes to a feature branch
+3. Create a Pull Request to `main`
+4. After merge, the wiki is automatically updated
+
+This approach allows you to:
+- Version control documentation alongside code
+- Review documentation changes in Pull Requests
+- Keep documentation and code in sync
+
 ## Contributing
 
 1. Fork the repository
