@@ -23,7 +23,7 @@ core:
   
   repository_directory: "."  # Relative to config.yml location
   
-  parameter: "parameter.yml"  # References parameter.yml in same folder
+  parameter: "parameter.yml"  # References parameter.yml located in the same workspace directory
 
 publish:
   skip:

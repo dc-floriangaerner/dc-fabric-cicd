@@ -7,7 +7,7 @@ This guide walks you through setting up the CI/CD pipeline for multi-workspace F
 - [ ] Microsoft Fabric workspace access (Admin or Contributor)
 - [ ] Microsoft Entra ID tenant access to create Service Principal
 - [ ] GitHub repository with Actions enabled
-- [ ] Dev, Test, and Prod Fabric workspaces created for each workspace folder
+- [ ] Dev, Test, and Prod Fabric workspaces (can be auto-created or manually created)
 
 ## Step 1: Create Azure Service Principal
 

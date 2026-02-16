@@ -189,7 +189,7 @@ workspaces/
 
 ## Resources
 
-- [GitHub Actions Workflow File](.github/workflows/fabric-deploy.yml)
+- [GitHub Actions Workflows](.github/workflows/)
 - [Troubleshooting Guide](Troubleshooting)
 - [Workspace Configuration](Workspace-Configuration)
 - [GitHub Actions Documentation](https://docs.github.com/actions)
