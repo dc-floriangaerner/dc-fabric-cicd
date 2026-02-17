@@ -20,20 +20,48 @@ Scripts in the `scripts/` directory are organized as a Python package:
 - **Python Version**: 3.11+
 - **Type Hints**: Always use type hints for function parameters and return types
 - **Error Handling**: Catch specific exceptions, use `sys.exit(1)` for errors
-- **Logging**: Use `print()` statements for GitHub Actions visibility (not logging module)
+- **Logging**: Use centralized logger from scripts.logger module: `logger = get_logger(__name__)`
 - **Docstrings**: Include for all public functions with Args and Returns sections
+
+### Code Quality with Ruff
+
+All Python code must pass Ruff linting and formatting checks. The CI workflow enforces these rules.
+
+**Run before committing:**
+```bash
+# Check linting issues
+ruff check scripts/
+
+# Auto-fix linting issues
+ruff check scripts/ --fix
+
+# Check formatting
+ruff format --check scripts/
+
+# Auto-format code
+ruff format scripts/
+```
+
+**Configuration:**
+- Ruff settings in `pyproject.toml`
+- Line length: 120 characters
+- Rules: pycodestyle (E/W), Pyflakes (F), isort (I), pyupgrade (UP), flake8-bugbear (B)
+- CI runs both `ruff check` and `ruff format --check` on PRs
 
 ### Error Handling Pattern
 
 ```python
 from azure.core.exceptions import HttpResponseError
+from .logger import get_logger
+
+logger = get_logger(__name__)
 
 try:
     # API operation
     result = client.do_something()
 except HttpResponseError as e:
     # Use str(e) to get error message, NOT e.message
-    print(f"ERROR: Operation failed: {str(e)}")
+    logger.error(f"Operation failed: {str(e)}")
     sys.exit(1)
 ```
 
