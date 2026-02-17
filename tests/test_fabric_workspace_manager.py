@@ -147,7 +147,7 @@ class TestAssignWorkspaceRole:
             message="API Error"
         )
 
-        with pytest.raises(Exception, match="Failed to assign role"):
+        with pytest.raises(Exception, match="role assignment failed"):
             assign_workspace_role("ws-id", "principal-id", "Contributor", mock_fabric_client)
 
 
@@ -189,9 +189,9 @@ class TestEnsureWorkspaceExists:
 
     @patch('scripts.fabric_workspace_manager.check_workspace_exists')
     @patch('scripts.fabric_workspace_manager.create_workspace')
-    @patch('scripts.fabric_workspace_manager.assign_workspace_role')
+    @patch('scripts.fabric_workspace_manager.add_workspace_admin')
     def test_ensure_workspace_with_role_assignment(
-        self, mock_assign, mock_create, mock_check, mock_fabric_client
+        self, mock_add_admin, mock_create, mock_check, mock_fabric_client
     ):
         """Test ensuring workspace with role assignment."""
         mock_check.return_value = None
@@ -206,10 +206,9 @@ class TestEnsureWorkspaceExists:
         )
 
         assert result == "new-workspace-id"
-        mock_assign.assert_called_once_with(
+        mock_add_admin.assert_called_once_with(
             "new-workspace-id",
             "sp-object-id",
-            "Contributor",
             mock_fabric_client
         )
 

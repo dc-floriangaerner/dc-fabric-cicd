@@ -94,7 +94,7 @@ def create_workspace(workspace_name: str, capacity_id: str, fabric_client: Fabri
                 f"Invalid capacity ID '{capacity_id}'. Verify FABRIC_CAPACITY_ID_* secret is correct."
             ) from e
         else:
-            raise Exception(f"Workspace creation failed: {e!s}") from e
+            raise
 
 
 def check_role_assignment_exists(workspace_id: str, principal_id: str, role: str, fabric_client: FabricClient) -> bool:
@@ -261,9 +261,9 @@ def assign_workspace_role(
 def ensure_workspace_exists(
     workspace_name: str,
     capacity_id: str,
-    service_principal_object_id: str,
+    service_principal_object_id: str | None,
+    entra_admin_group_id: str | None,
     fabric_client: FabricClient,
-    entra_admin_group_id: str | None = None,
 ) -> str:
     """Ensure workspace exists using SDK, creating it if necessary.
 
@@ -275,8 +275,8 @@ def ensure_workspace_exists(
         workspace_name: Display name of the workspace (e.g., "[D] Fabric Blueprint")
         capacity_id: Fabric capacity ID for the environment
         service_principal_object_id: Azure AD Object ID of the deployment service principal
-        fabric_client: Microsoft Fabric API client
         entra_admin_group_id: Optional Azure AD Object ID of Entra ID group for admin access
+        fabric_client: Microsoft Fabric API client
 
     Returns:
         Workspace ID (either existing or newly created)
