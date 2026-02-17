@@ -2,6 +2,8 @@
 
 Learn how to configure workspace deployment settings using `config.yml` and `parameter.yml` files.
 
+**⏱️ Estimated Time**: 15-20 minutes per workspace
+
 ## Overview
 
 Each workspace folder in the repository contains two critical configuration files:
@@ -20,9 +22,9 @@ core:
     dev: "[D] Fabric Blueprint"
     test: "[T] Fabric Blueprint"
     prod: "[P] Fabric Blueprint"
-  
+
   repository_directory: "."  # Relative to config.yml location
-  
+
   parameter: "parameter.yml"  # References parameter.yml located in the same workspace directory
 
 publish:
@@ -69,7 +71,7 @@ find_replace:
       _ALL_: "$items.Lakehouse.lakehouse_bronze.id"
     item_type: "Notebook"
     description: "Replace bronze lakehouse references"
-  
+
   # Replace workspace ID using regex
   - find_value: 'workspace\s*=\s*"([^"]+)"'
     replace_value:

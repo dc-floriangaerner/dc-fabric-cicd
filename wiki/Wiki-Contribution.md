@@ -1,6 +1,10 @@
-# Wiki Content for GitHub Wiki
+# Wiki Contribution Guide
 
-This directory contains the markdown files that are automatically synced to the [GitHub Wiki](https://github.com/dc-floriangaerner/fabric-cicd/wiki).
+This guide explains how to contribute to the Fabric CI/CD wiki documentation.
+
+## Overview
+
+This directory contains the markdown files that are automatically synced to the [GitHub Wiki](https://github.com/dc-floriangaerner/dc-fabric-cicd/wiki).
 
 ## How It Works
 
@@ -20,11 +24,12 @@ When changes to files in this directory are pushed to the `main` branch, the `.g
 
 | File | Wiki Page | Description |
 |------|-----------|-------------|
-| `Home.md` | [Home](https://github.com/dc-floriangaerner/fabric-cicd/wiki/Home) | Wiki home page with overview |
-| `Setup-Guide.md` | [Setup Guide](https://github.com/dc-floriangaerner/fabric-cicd/wiki/Setup-Guide) | Step-by-step setup instructions |
-| `Workspace-Configuration.md` | [Workspace Configuration](https://github.com/dc-floriangaerner/fabric-cicd/wiki/Workspace-Configuration) | Configure workspaces with config.yml and parameter.yml |
-| `Deployment-Workflow.md` | [Deployment Workflow](https://github.com/dc-floriangaerner/fabric-cicd/wiki/Deployment-Workflow) | Understand the CI/CD pipeline |
-| `Troubleshooting.md` | [Troubleshooting](https://github.com/dc-floriangaerner/fabric-cicd/wiki/Troubleshooting) | Common issues and solutions |
+| `Home.md` | [Home](https://github.com/dc-floriangaerner/dc-fabric-cicd/wiki/Home) | Wiki home page with overview |
+| `Setup-Guide.md` | [Setup Guide](https://github.com/dc-floriangaerner/dc-fabric-cicd/wiki/Setup-Guide) | Step-by-step setup instructions |
+| `Workspace-Configuration.md` | [Workspace Configuration](https://github.com/dc-floriangaerner/dc-fabric-cicd/wiki/Workspace-Configuration) | Configure workspaces with config.yml and parameter.yml |
+| `Deployment-Workflow.md` | [Deployment Workflow](https://github.com/dc-floriangaerner/dc-fabric-cicd/wiki/Deployment-Workflow) | Understand the CI/CD pipeline |
+| `Troubleshooting.md` | [Troubleshooting](https://github.com/dc-floriangaerner/dc-fabric-cicd/wiki/Troubleshooting) | Common issues and solutions |
+| `Wiki-Contribution.md` | [Wiki Contribution](https://github.com/dc-floriangaerner/dc-fabric-cicd/wiki/Wiki-Contribution) | Guide for contributing to wiki |
 
 ## Adding New Wiki Pages
 
