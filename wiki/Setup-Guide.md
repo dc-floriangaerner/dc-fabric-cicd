@@ -2,6 +2,14 @@
 
 This guide walks you through setting up the CI/CD pipeline for multi-workspace Fabric deployments.
 
+**⏱️ Estimated Time**: 30-45 minutes
+
+**📋 What You'll Accomplish**:
+- Create Azure Service Principal for authentication
+- Grant Fabric workspace permissions
+- Configure GitHub repository secrets
+- Test automated deployment to Dev environment
+
 ## Prerequisites Checklist
 
 - [ ] Microsoft Fabric workspace access (Admin or Contributor)
@@ -10,6 +18,8 @@ This guide walks you through setting up the CI/CD pipeline for multi-workspace F
 - [ ] Dev, Test, and Prod Fabric workspaces (can be auto-created or manually created)
 
 ## Step 1: Create Azure Service Principal
+
+**⏱️ Time**: ~10 minutes
 
 ### Using Azure Portal
 
@@ -45,6 +55,8 @@ echo "DEPLOYMENT_SP_OBJECT_ID: $OBJECT_ID"
 
 ## Step 2: Grant Fabric Workspace Permissions
 
+**⏱️ Time**: ~10 minutes (depends on number of workspaces)
+
 For **each workspace** in **each environment** (Dev, Test, Prod):
 
 1. Open the workspace in Fabric portal
@@ -55,6 +67,8 @@ For **each workspace** in **each environment** (Dev, Test, Prod):
 6. Click **Add**
 
 ## Step 3: Configure GitHub Secrets
+
+**⏱️ Time**: ~5 minutes
 
 1. Go to your GitHub repository
 2. Navigate to **Settings** → **Secrets and variables** → **Actions**
@@ -80,6 +94,8 @@ For **each workspace** in **each environment** (Dev, Test, Prod):
 
 ## Step 4: Test the Pipeline
 
+**⏱️ Time**: ~15-20 minutes
+
 ### Test Dev Deployment (Automatic)
 
 1. Create a test change in a workspace:
@@ -102,6 +118,19 @@ git push origin feature/test-deployment
 3. Select environment (**test** or **prod**)
 4. Click **Run workflow** button
 5. Monitor the deployment in the Actions tab
+
+## ✅ Success Criteria
+
+You've successfully completed setup when:
+
+- [ ] Service Principal created with Client ID, Secret, and Tenant ID recorded
+- [ ] Service Principal has Contributor/Admin access to all target workspaces
+- [ ] All required GitHub secrets configured (`AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, `AZURE_TENANT_ID`)
+- [ ] Test deployment to Dev succeeded without errors
+- [ ] Workspace items deployed correctly to Dev workspace
+- [ ] GitHub Actions workflow completed with green checkmark
+
+**What's Next?** If all criteria are met, you're ready to configure your workspaces and deploy!
 
 ## Next Steps
 

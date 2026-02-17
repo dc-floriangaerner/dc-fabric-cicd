@@ -281,6 +281,7 @@ If issues persist after trying these solutions:
 2. **Verify configuration** - Double-check all `config.yml` and `parameter.yml` files
 3. **Test locally** - Try deploying to a test workspace first
 4. **Review documentation** - Check [Setup Guide](Setup-Guide) and [Workspace Configuration](Workspace-Configuration)
+5. **Contact support** - Email [florian.gaerner@dataciders.com](mailto:florian.gaerner@dataciders.com) for assistance
 
 ## Additional Resources
 

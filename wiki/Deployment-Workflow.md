@@ -2,6 +2,8 @@
 
 Understand the CI/CD pipeline workflow for deploying Microsoft Fabric workspaces.
 
+**⏱️ Reading Time**: 10-15 minutes
+
 ## Overview
 
 This repository uses a trunk-based development workflow with automated deployments to Dev and manual promotions to Test and Production.
@@ -37,6 +39,56 @@ For each workspace in the deployment:
 6. **Clean Up Orphans** - Remove items not in repository (optional)
 7. **Rollback on Failure** - If any workspace fails, rollback all previously deployed workspaces
 8. **Report Status** - Display deployment summary in GitHub Actions
+
+### Authentication Flow
+
+```mermaid
+sequenceDiagram
+    participant GH as GitHub Actions
+    participant SP as Service Principal
+    participant AAD as Microsoft Entra ID
+    participant Fabric as Fabric Workspace
+
+    GH->>AAD: Authenticate with Client ID + Secret
+    AAD->>AAD: Validate credentials
+    AAD-->>GH: Return access token
+    GH->>Fabric: Deploy items with token
+    Fabric->>Fabric: Verify SP has workspace access
+    Fabric-->>GH: Deployment successful
+```
+
+### Workspace Structure
+
+```mermaid
+graph TD
+    A[Repository] --> B[workspaces/]
+    B --> C[Fabric Blueprint/]
+    C --> D[config.yml]
+    C --> E[parameter.yml]
+    C --> F[1_Bronze/]
+    C --> G[2_Silver/]
+    C --> H[3_Gold/]
+    C --> I[4_Analytics/]
+
+    F --> F1[lakehouse_bronze.Lakehouse/]
+    F --> F2[ingestion/cp_br_source.CopyJob/]
+
+    G --> G1[lakehouse_silver.Lakehouse/]
+    G --> G2[transformation/nb_sl_transform.Notebook/]
+
+    H --> H1[lakehouse_gold.Lakehouse/]
+    H --> H2[modeling/nb_gd_modeling.Notebook/]
+
+    I --> I1[Data Agents/da_agent.DataAgent/]
+    I --> I2[env.Environment/]
+
+    style D fill:#90EE90
+    style E fill:#90EE90
+    style F fill:#FFE4B5
+    style G fill:#B0E0E6
+    style H fill:#FFD700
+    style I fill:#DDA0DD
+```
 
 ## Triggering Deployments
 

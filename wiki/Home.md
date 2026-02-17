@@ -2,12 +2,21 @@
 
 Welcome to the Fabric CI/CD Reference Architecture documentation!
 
+> **📋 Prerequisites**: Before you begin, ensure you have:
+> - Microsoft Fabric workspace access (Admin or Contributor role)
+> - Microsoft Entra ID access to create Service Principals
+> - GitHub repository with Actions enabled
+> - Basic familiarity with Git workflows and YAML configuration
+>
+> **⏱️ Estimated Setup Time**: 30-45 minutes for complete initial setup
+
 ## Quick Links
 
-- [Setup Guide](Setup-Guide)
-- [Workspace Configuration](Workspace-Configuration)
-- [Deployment Workflow](Deployment-Workflow)
-- [Troubleshooting](Troubleshooting)
+- [Setup Guide](Setup-Guide) - Get started with initial configuration
+- [Workspace Configuration](Workspace-Configuration) - Configure workspace files
+- [Deployment Workflow](Deployment-Workflow) - Understand the CI/CD pipeline
+- [Troubleshooting](Troubleshooting) - Solve common issues
+- [FAQ](FAQ) - Frequently asked questions
 
 ## Overview
 
@@ -23,7 +32,13 @@ This wiki provides comprehensive documentation for implementing CI/CD pipelines 
 
 ## Getting Started
 
-New to this project? Start with the [Setup Guide](Setup-Guide) to configure your CI/CD pipeline.
+New to this project? Follow this recommended path:
+
+1. **[Setup Guide](Setup-Guide)** (30-45 min) - Configure Service Principal and GitHub secrets
+2. **[Workspace Configuration](Workspace-Configuration)** (15-20 min) - Set up workspace config files
+3. **[Deployment Workflow](Deployment-Workflow)** (10-15 min read) - Understand the deployment process
+4. **[Troubleshooting](Troubleshooting)** (Reference) - Solve issues as they arise
+5. **[FAQ](FAQ)** (Reference) - Find answers to common questions
 
 ## Repository Structure
 
@@ -40,7 +55,7 @@ workspaces/
 
 ## Contributing
 
-See the main [README](https://github.com/dc-floriangaerner/fabric-cicd/blob/main/README.md) for contribution guidelines.
+See the [Wiki Contribution Guide](Wiki-Contribution) for how to update this documentation, or the main [README](https://github.com/dc-floriangaerner/dc-fabric-cicd/blob/main/README.md) for contribution guidelines.
 
 ## Resources
 
