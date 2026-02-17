@@ -62,6 +62,10 @@ If you need to manually trigger the wiki sync:
 - **Single Source of Truth**: Main repository is the source for all content
 - **Collaboration**: Multiple contributors can work on documentation simultaneously
 
+## Questions or Feedback
+
+For questions about contributing to the wiki or feedback on documentation, contact [florian.gaerner@dataciders.com](mailto:florian.gaerner@dataciders.com)
+
 ## References
 
 - [GitHub Wiki Documentation](https://docs.github.com/en/communities/documenting-your-project-with-wikis)

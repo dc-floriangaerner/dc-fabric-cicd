@@ -201,3 +201,4 @@ Still have questions?
 - **Microsoft Fabric Docs**: [learn.microsoft.com/fabric/](https://learn.microsoft.com/fabric/)
 - **fabric-cicd Library**: [microsoft.github.io/fabric-cicd/](https://microsoft.github.io/fabric-cicd/)
 - **GitHub Issues**: [Create an issue](https://github.com/dc-floriangaerner/dc-fabric-cicd/issues/new)
+- **Email Support**: [florian.gaerner@dataciders.com](mailto:florian.gaerner@dataciders.com)
