@@ -3,18 +3,17 @@
 
 """Tests for deploy_to_fabric.py deployment logic."""
 
+from unittest.mock import patch
+
 import pytest
-import yaml
-from pathlib import Path
-from unittest.mock import Mock, patch, MagicMock
+
 from scripts.deploy_to_fabric import (
-    load_workspace_config,
-    discover_workspace_folders,
-    get_workspace_name_for_environment,
     DeploymentResult,
     DeploymentSummary,
+    discover_workspace_folders,
+    get_workspace_name_for_environment,
+    load_workspace_config,
 )
-from scripts.deployment_config import CONFIG_FILE
 
 
 class TestLoadWorkspaceConfig:
@@ -24,7 +23,7 @@ class TestLoadWorkspaceConfig:
         """Test loading a valid config.yml file."""
         workspace_folder = "Test Workspace"
         config = load_workspace_config(workspace_folder, str(temp_workspace_dir))
-        
+
         assert config is not None
         assert "core" in config
         assert "workspace" in config["core"]
@@ -41,7 +40,7 @@ class TestDiscoverWorkspaceFolders:
     def test_discover_workspace_with_config(self, temp_workspace_dir):
         """Test discovering workspace folders that have config.yml."""
         workspaces = discover_workspace_folders(str(temp_workspace_dir))
-        
+
         assert len(workspaces) > 0
         assert "Test Workspace" in workspaces
 
@@ -49,7 +48,7 @@ class TestDiscoverWorkspaceFolders:
         """Test discovering workspaces when none exist."""
         empty_dir = tmp_path / "empty"
         empty_dir.mkdir()
-        
+
         workspaces = discover_workspace_folders(str(empty_dir))
         assert len(workspaces) == 0
 
@@ -76,14 +75,14 @@ class TestGetWorkspaceNameForEnvironment:
         """Test getting workspace name for undefined environment."""
         # Remove 'test' from config
         del sample_workspace_config["core"]["workspace"]["test"]
-        
+
         with pytest.raises(KeyError):
             get_workspace_name_for_environment(sample_workspace_config, "test")
 
     def test_get_workspace_name_invalid_config(self):
         """Test getting workspace name with invalid config structure."""
         invalid_config = {"invalid": "structure"}
-        
+
         with pytest.raises(KeyError):
             get_workspace_name_for_environment(invalid_config, "dev")
 
@@ -98,7 +97,7 @@ class TestDeploymentResult:
             workspace_name="[D] Test Workspace",
             success=True
         )
-        
+
         assert result.success is True
         assert result.error_message == ""
 
@@ -110,7 +109,7 @@ class TestDeploymentResult:
             success=False,
             error_message="Connection failed"
         )
-        
+
         assert result.success is False
         assert result.error_message == "Connection failed"
 
@@ -125,13 +124,13 @@ class TestDeploymentSummary:
             DeploymentResult("WS2", "[D] WS2", True),
             DeploymentResult("WS3", "[D] WS3", False, "Error"),
         ]
-        
+
         summary = DeploymentSummary(
             environment="dev",
             duration=120.5,
             results=results
         )
-        
+
         assert summary.total_workspaces == 3
         assert summary.successful_count == 2
         assert summary.failed_count == 1
@@ -142,13 +141,13 @@ class TestDeploymentSummary:
             DeploymentResult("WS1", "[D] WS1", True),
             DeploymentResult("WS2", "[D] WS2", True),
         ]
-        
+
         summary = DeploymentSummary(
             environment="dev",
             duration=60.0,
             results=results
         )
-        
+
         assert summary.successful_count == 2
         assert summary.failed_count == 0
 
@@ -158,13 +157,13 @@ class TestDeploymentSummary:
             DeploymentResult("WS1", "[D] WS1", False, "Error 1"),
             DeploymentResult("WS2", "[D] WS2", False, "Error 2"),
         ]
-        
+
         summary = DeploymentSummary(
             environment="dev",
             duration=30.0,
             results=results
         )
-        
+
         assert summary.successful_count == 0
         assert summary.failed_count == 2
 

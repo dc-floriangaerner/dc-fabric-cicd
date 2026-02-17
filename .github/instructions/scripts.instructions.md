@@ -23,6 +23,31 @@ Scripts in the `scripts/` directory are organized as a Python package:
 - **Logging**: Use `print()` statements for GitHub Actions visibility (not logging module)
 - **Docstrings**: Include for all public functions with Args and Returns sections
 
+### Code Quality with Ruff
+
+All Python code must pass Ruff linting and formatting checks. The CI workflow enforces these rules.
+
+**Run before committing:**
+```bash
+# Check linting issues
+ruff check scripts/
+
+# Auto-fix linting issues
+ruff check scripts/ --fix
+
+# Check formatting
+ruff format --check scripts/
+
+# Auto-format code
+ruff format scripts/
+```
+
+**Configuration:**
+- Ruff settings in `pyproject.toml`
+- Line length: 120 characters
+- Rules: pycodestyle (E/W), Pyflakes (F), isort (I), pyupgrade (UP), flake8-bugbear (B)
+- CI runs both `ruff check` and `ruff format --check` on PRs
+
 ### Error Handling Pattern
 
 ```python

@@ -39,12 +39,14 @@ jobs:
           pip install -r requirements-dev.txt
       
       - name: Run Ruff linting
+        # continue-on-error: true
         run: |
           echo "::group::Ruff Check"
           ruff check scripts/ --output-format=github
           echo "::endgroup::"
       
       - name: Run Ruff formatting check
+        # continue-on-error: true
         run: |
           echo "::group::Ruff Format Check"
           ruff format --check scripts/
