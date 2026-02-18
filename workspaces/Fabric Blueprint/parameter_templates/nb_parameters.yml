@@ -47,13 +47,3 @@ find_replace:
     # -------------------------------------------------------------------------
     # LITERAL rules: known dev lakehouse GUIDs
     # -------------------------------------------------------------------------
-
-    - find_value: "4f3864da-233e-496b-8bc9-b951acdd2b17"  # dev: lakehouse_silver
-      replace_value:
-          _ALL_: "$items.Lakehouse.lakehouse_silver.$id"
-      item_type: "Notebook"
-
-    - find_value: "6323ba06-e77d-4165-aac8-962913913992"  # dev: lakehouse_bronze
-      replace_value:
-          _ALL_: "$items.Lakehouse.lakehouse_bronze.$id"
-      item_type: "Notebook"
