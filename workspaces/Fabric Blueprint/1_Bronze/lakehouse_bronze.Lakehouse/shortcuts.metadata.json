@@ -1,1 +1,14 @@
-[]
+[
+  {
+    "name": "fabric-shortcuts",
+    "path": "/Files",
+    "target": {
+      "type": "AdlsGen2",
+      "adlsGen2": {
+        "connectionId": "0fd01101-5e27-4a5e-b020-1e240838d074",
+        "location": "https://stsfabricshortcuts.dfs.core.windows.net",
+        "subpath": "/fabric-shortcuts"
+      }
+    }
+  }
+]
