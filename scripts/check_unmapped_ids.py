@@ -303,9 +303,18 @@ def _extract_from_notebook(file_path: Path) -> list[tuple[str, str, str]]:
     except Exception:
         return results
 
+    in_known_lakehouses = False
+
     for line in lines:
         if "# META" not in line:
             continue
+
+        # Track entry/exit of the known_lakehouses array (multi-line format)
+        if NOTEBOOK_KNOWN_LAKEHOUSES_KEY in line:
+            in_known_lakehouses = True
+        elif in_known_lakehouses and "]" in line:
+            in_known_lakehouses = False
+
         guids = GUID_RE.findall(line)
         if not guids:
             continue
@@ -317,9 +326,12 @@ def _extract_from_notebook(file_path: Path) -> list[tuple[str, str, str]]:
             guid = field_match.group(2)
             if field_name in NOTEBOOK_SENSITIVE_FIELDS:
                 results.append((field_name, guid, line.strip()))
+            elif field_name == "id" and in_known_lakehouses:
+                # GUIDs nested under known_lakehouses as {"id": "GUID"} on separate lines
+                results.append((NOTEBOOK_KNOWN_LAKEHOUSES_KEY, guid, line.strip()))
             continue
 
-        # known_lakehouses: may contain multiple GUIDs inline
+        # known_lakehouses: fallback for single-line / inline format
         if NOTEBOOK_KNOWN_LAKEHOUSES_KEY in line:
             for guid in guids:
                 results.append((NOTEBOOK_KNOWN_LAKEHOUSES_KEY, guid, line.strip()))
