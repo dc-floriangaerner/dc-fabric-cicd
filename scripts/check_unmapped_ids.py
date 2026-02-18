@@ -457,24 +457,29 @@ def report_results(all_unmapped: list[UnmappedGuid], is_github_actions: bool) ->
         logger.info("✓ No unmapped IDs found. All GUIDs are covered by parameter rules.")
         return
 
-    logger.info(f"\nFound {len(all_unmapped)} unmapped GUID(s):\n")
+    logger.info(f"  Found {len(all_unmapped)} unmapped GUID(s) — add a find_replace rule for each:\n")
 
-    by_file: dict[str, list[UnmappedGuid]] = {}
+    # ── column widths ──────────────────────────────────────────────────────────
+    COL_GUID = 36
+    COL_FIELD = max(len(u.field_name) for u in all_unmapped)
+    COL_FILE = max(len(u.relative_file) for u in all_unmapped)
+    HDR = f"  {'GUID':<{COL_GUID}}  {'Field':<{COL_FIELD}}  File"
+    SEP = f"  {'-' * COL_GUID}  {'-' * COL_FIELD}  {'-' * min(COL_FILE, 80)}"
+
+    # Group by workspace so each workspace gets its own section
+    by_workspace: dict[str, list[UnmappedGuid]] = {}
     for u in all_unmapped:
-        by_file.setdefault(u.relative_file, []).append(u)
+        by_workspace.setdefault(u.workspace_folder, []).append(u)
 
-    for rel_file, items in sorted(by_file.items()):
-        logger.info(f"  {rel_file}")
-        for u in items:
-            msg = f'GUID {u.guid} in field "{u.field_name}" has no matching ' f"find_replace rule in parameter.yml"
-            logger.info(f"    ✗ {msg}")
-            logger.info(f"      context: {u.context}")
+    for workspace, items in sorted(by_workspace.items()):
+        logger.info(f"  Workspace: {workspace}")
+        logger.info(HDR)
+        logger.info(SEP)
+        for u in sorted(items, key=lambda x: (x.relative_file, x.field_name)):
+            logger.info(f"  {u.guid:<{COL_GUID}}  {u.field_name:<{COL_FIELD}}  {u.relative_file}")
             if is_github_actions:
-                _github_error(
-                    file=u.relative_file,
-                    title="Unmapped GUID",
-                    message=msg,
-                )
+                msg = f'GUID {u.guid} in field "{u.field_name}" has no matching find_replace rule in parameter.yml'
+                _github_error(file=u.relative_file, title="Unmapped GUID", message=msg)
         logger.info("")
 
     logger.info(SEPARATOR_SHORT)
