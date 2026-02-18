@@ -1,0 +1,15 @@
+# CopyJob Parameterization Templates
+# Replaces hardcoded workspace and lakehouse IDs in CopyJob definitions.
+
+find_replace:
+    # Replace hardcoded workspace ID in CopyJob with dynamic workspace reference
+    - find_value: "00000000-0000-0000-0000-000000000000"
+      replace_value:
+          _ALL_: "$workspace.id"
+      item_type: "CopyJob"
+
+    # Replace hardcoded lakehouse artifact ID in CopyJob
+    - find_value: "b892bcb4-b1d3-a9e0-4a9e-fac33bb0b654"
+      replace_value:
+          _ALL_: "$items.Lakehouse.lakehouse_bronze.id"
+      item_type: "CopyJob"

@@ -1,0 +1,59 @@
+# Notebook Parameterization Templates
+# Replaces lakehouse and workspace IDs in notebook METADATA blocks.
+#
+#   REGEX rules   - match default_lakehouse and default_lakehouse_workspace_id fields
+#                   by field name, scoped by layer folder where the target lakehouse differs.
+#   LITERAL rules - match known dev lakehouse GUIDs across all notebooks.
+#                   Covers default_lakehouse, known_lakehouses, and any other occurrence.
+#                   Add one entry per lakehouse GUID captured from the dev workspace.
+
+find_replace:
+
+    # -------------------------------------------------------------------------
+    # REGEX rules
+    # -------------------------------------------------------------------------
+
+    # default_lakehouse_workspace_id - all layers
+    - find_value: \#\s*META\s+"default_lakehouse_workspace_id":\s*"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})"
+      replace_value:
+          _ALL_: "$workspace.$id"
+      is_regex: "true"
+      item_type: "Notebook"
+
+    # default_lakehouse - Bronze
+    - find_value: \#\s*META\s+"default_lakehouse":\s*"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})"
+      replace_value:
+          _ALL_: "$items.Lakehouse.lakehouse_bronze.$id"
+      is_regex: "true"
+      item_type: "Notebook"
+      file_path: "**/1_Bronze/**/notebook-content.py"
+
+    # default_lakehouse - Silver
+    - find_value: \#\s*META\s+"default_lakehouse":\s*"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})"
+      replace_value:
+          _ALL_: "$items.Lakehouse.lakehouse_silver.$id"
+      is_regex: "true"
+      item_type: "Notebook"
+      file_path: "**/2_Silver/**/notebook-content.py"
+
+    # default_lakehouse - Gold
+    - find_value: \#\s*META\s+"default_lakehouse":\s*"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})"
+      replace_value:
+          _ALL_: "$items.Lakehouse.lakehouse_gold.$id"
+      is_regex: "true"
+      item_type: "Notebook"
+      file_path: "**/3_Gold/**/notebook-content.py"
+
+    # -------------------------------------------------------------------------
+    # LITERAL rules: known dev lakehouse GUIDs
+    # -------------------------------------------------------------------------
+
+    - find_value: "4f3864da-233e-496b-8bc9-b951acdd2b17"  # dev: lakehouse_silver
+      replace_value:
+          _ALL_: "$items.Lakehouse.lakehouse_silver.$id"
+      item_type: "Notebook"
+
+    - find_value: "6323ba06-e77d-4165-aac8-962913913992"  # dev: lakehouse_bronze
+      replace_value:
+          _ALL_: "$items.Lakehouse.lakehouse_bronze.$id"
+      item_type: "Notebook"
