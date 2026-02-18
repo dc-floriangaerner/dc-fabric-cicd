@@ -477,10 +477,15 @@ def report_results(all_unmapped: list[UnmappedGuid], is_github_actions: bool) ->
         logger.info(SEP)
         for u in sorted(items, key=lambda x: (x.relative_file, x.field_name)):
             logger.info(f"  {u.guid:<{COL_GUID}}  {u.field_name:<{COL_FIELD}}  {u.relative_file}")
-            if is_github_actions:
-                msg = f'GUID {u.guid} in field "{u.field_name}" has no matching find_replace rule in parameter.yml'
-                _github_error(file=u.relative_file, title="Unmapped GUID", message=msg)
         logger.info("")
+
+    # Emit GitHub Actions annotations after the table so they don't fragment it.
+    # These workflow commands register file-level PR annotations and must be
+    # printed to stdout — they are invisible in the rendered Actions UI.
+    if is_github_actions:
+        for u in all_unmapped:
+            msg = f'GUID {u.guid} in field "{u.field_name}" has no matching find_replace rule in parameter.yml'
+            _github_error(file=u.relative_file, title="Unmapped GUID", message=msg)
 
     logger.info(SEPARATOR_SHORT)
     logger.info("These GUIDs will be deployed verbatim (as Dev IDs) to Test/Production.")
