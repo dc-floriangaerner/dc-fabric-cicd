@@ -25,7 +25,23 @@ terraform/
 
 ## One-Time Bootstrap (run manually before first `terraform apply`)
 
-### 1 — Create Terraform state storage
+### 1 — Authenticate and select your Azure subscription
+
+```bash
+# Login interactively
+az login
+
+# List available subscriptions
+az account list --output table
+
+# Set the target subscription
+az account set --subscription "<subscription-id>"
+
+# Verify
+az account show --output table
+```
+
+### 2 — Create Terraform state storage
 
 ```bash
 # Set variables
@@ -55,7 +71,7 @@ az storage container create \
 
 Update `main.tf` `backend "azurerm"` block if you use different names.
 
-### 2 — Grant the CI Service Principal access to the state storage
+### 3 — Grant the CI Service Principal access to the state storage
 
 ```bash
 SP_OBJECT_ID="<service-principal-object-id>"
@@ -66,7 +82,7 @@ az role assignment create \
   --scope "/subscriptions/<subscription-id>/resourceGroups/$RESOURCE_GROUP/storageAccounts/$STORAGE_ACCOUNT"
 ```
 
-### 3 — Populate environments/*.tfvars
+### 4 — Populate environments/*.tfvars
 
 Edit `environments/dev.tfvars`, `test.tfvars`, and `prod.tfvars`:
 
@@ -76,7 +92,7 @@ Edit `environments/dev.tfvars`, `test.tfvars`, and `prod.tfvars`:
 | `capacity_id` | Fabric Admin Portal → Capacity Settings → GUID |
 | `entra_admin_group_object_id` | Azure AD → Groups → your admin group → Object ID |
 
-### 4 — Add GitHub secrets
+### 5 — Add GitHub secrets
 
 | Secret | Description |
 |---|---|
@@ -85,7 +101,7 @@ Edit `environments/dev.tfvars`, `test.tfvars`, and `prod.tfvars`:
 | `AZURE_TENANT_ID` | Azure AD Tenant ID (reused from CI/CD) |
 | `ARM_SUBSCRIPTION_ID` | Azure subscription ID for state storage access |
 
-### 5 — Run first apply for Dev
+### 6 — Run first apply for Dev
 
 ```bash
 # Authenticate
