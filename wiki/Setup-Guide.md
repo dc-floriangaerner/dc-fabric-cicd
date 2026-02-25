@@ -48,10 +48,6 @@ echo "AZURE_CLIENT_ID:" $(echo $SP_OUTPUT | jq -r '.clientId')
 echo "AZURE_CLIENT_SECRET:" $(echo $SP_OUTPUT | jq -r '.clientSecret')
 echo "AZURE_TENANT_ID:" $(echo $SP_OUTPUT | jq -r '.tenantId')
 
-# Get Object ID for the Service Principal
-CLIENT_ID=$(echo $SP_OUTPUT | jq -r '.clientId')
-OBJECT_ID=$(az ad sp show --id $CLIENT_ID --query id -o tsv)
-echo "DEPLOYMENT_SP_OBJECT_ID: $OBJECT_ID"
 ```
 
 ## Step 2: Bootstrap Terraform State Storage (One-Time)
