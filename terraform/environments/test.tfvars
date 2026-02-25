@@ -1,4 +1,4 @@
 # NOTE: Replace the following placeholder values with actual IDs before running Terraform in this environment.
 workspace_name_fabric_blueprint = "[T] Fabric Blueprint"
-capacity_id                     = "00000000-0000-0000-0000-000000000000" # TODO: Replace with real test capacity ID
-entra_admin_group_object_id     = "00000000-0000-0000-0000-000000000000" # TODO: Replace with real Entra admin group object ID
+capacity_id                     = "7a9fee65-41e4-4272-81ec-ea5366b73eb4"
+entra_admin_group_object_id     = "e9acbe03-d883-4ff6-85c7-fd786e6f8dbb"
