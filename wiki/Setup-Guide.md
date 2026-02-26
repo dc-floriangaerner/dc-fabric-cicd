@@ -205,6 +205,6 @@ You've successfully completed setup when:
 
 ## Resources
 
-- [Full Setup Documentation (SETUP.md)](https://github.com/dc-floriangaerner/fabric-cicd/blob/main/SETUP.md)
+- [Full Setup Documentation (SETUP.md)](https://github.com/dc-floriangaerner/dc-fabric-cicd/blob/main/SETUP.md)
 - [Microsoft Fabric Documentation](https://learn.microsoft.com/fabric/)
 - [GitHub Actions Documentation](https://docs.github.com/actions)

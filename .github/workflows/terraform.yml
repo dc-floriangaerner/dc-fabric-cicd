@@ -72,6 +72,7 @@ jobs:
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: |
           terraform init \
+            -input=false \
             -backend-config="key=fabric-cicd-${{ env.TARGET_ENV }}.tfstate"
 
       - name: Terraform Validate
@@ -79,10 +80,10 @@ jobs:
         run: terraform validate
 
       - name: Terraform Plan
-        id: plan
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: |
           terraform plan \
+            -input=false \
             -var-file="environments/${{ env.TARGET_ENV }}.tfvars" \
             -out=tfplan \
             -no-color
@@ -91,5 +92,6 @@ jobs:
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: |
           terraform apply \
+            -input=false \
             -auto-approve \
             tfplan
