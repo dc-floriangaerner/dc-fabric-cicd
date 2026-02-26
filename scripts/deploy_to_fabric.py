@@ -12,7 +12,6 @@ from pathlib import Path
 from typing import Any
 
 import yaml
-from azure.identity import ClientSecretCredential  # backwards compatibility for external patches/tests
 from fabric_cicd import append_feature_flag, change_log_level, deploy_with_config  # type: ignore[import-untyped]
 
 # Import local modules using relative imports
