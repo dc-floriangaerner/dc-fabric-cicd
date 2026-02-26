@@ -36,7 +36,7 @@ Manages the Fabric workspace lifecycle. Runs infrequently — only when workspac
 - Manual `workflow_dispatch` → applies to chosen environment (dev / test / prod)
 
 **Steps:**
-1. `terraform init -backend-config="key=fabric-cicd-<env>.tfstate"` — initialise provider and remote state with an environment-specific state file
+1. `terraform init -backend-config="key=fabric-cicd-<env>.tfstate"` — initialise provider and remote state with environment-specific state key
 2. `terraform validate` — check HCL syntax
 3. `terraform plan` — show planned changes
 4. `terraform apply` — create/update workspaces and role assignments
