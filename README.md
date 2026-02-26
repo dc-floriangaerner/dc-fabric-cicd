@@ -13,18 +13,18 @@ The included `workspaces/Fabric Blueprint` content is a minimum sample so the pi
 
 1. Clone or fork this repository.
 2. Create a Service Principal in Microsoft Entra ID.
-3. Capture required IDs/secrets from your Azure setup:
-   - `AZURE_CLIENT_ID` (Service Principal app/client ID)
-   - `AZURE_CLIENT_SECRET` (Service Principal secret value)
-   - `AZURE_TENANT_ID` (Entra tenant ID)
-   - `ARM_SUBSCRIPTION_ID` (Azure subscription ID that hosts Terraform state)
-4. Bootstrap Terraform backend state storage (one-time):
+3. Bootstrap Terraform backend state storage (one-time):
    - Create Azure storage resources used by `terraform/main.tf` backend:
      - `resource_group_name = "rg-fabric-cicd-tfstate"`
      - `storage_account_name = "stsfabriccicdtfstate"`
      - `container_name = "tfstate"`
    - If you use different names, update `terraform/main.tf`.
    - Grant the Service Principal `Storage Blob Data Contributor` on the storage account.
+4. Capture required IDs/secrets from your Azure setup:
+   - `AZURE_CLIENT_ID` (Service Principal app/client ID)
+   - `AZURE_CLIENT_SECRET` (Service Principal secret value)
+   - `AZURE_TENANT_ID` (Entra tenant ID)
+   - `ARM_SUBSCRIPTION_ID` (Azure subscription ID that hosts Terraform state)
 5. Configure GitHub repository secrets:
    - `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, `AZURE_TENANT_ID`
    - `ARM_SUBSCRIPTION_ID`
