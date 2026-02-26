@@ -45,6 +45,10 @@ Set real values for:
 - `capacity_id`
 - `entra_admin_group_object_id`
 
+`entra_admin_group_object_id` means: the Object ID of the Entra ID group that Terraform assigns as `Admin` on the workspace.
+Where to find it:
+- Entra admin center -> Groups -> your admin group -> `Object ID`
+
 Important:
 - `workspace_name` must match the workspace name in `workspaces/Fabric Blueprint/config.yml` for the same environment.
 - Placeholder GUIDs like `00000000-0000-0000-0000-000000000000` must be replaced.

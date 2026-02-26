@@ -33,7 +33,8 @@ The included `workspaces/Fabric Blueprint` content is a minimum sample so the pi
 7. In each tfvars file, set real values for:
    - `workspace_name`
    - `capacity_id`
-   - `entra_admin_group_object_id`
+   - `entra_admin_group_object_id` (Object ID of the Entra ID group that should be Fabric Workspace Admin)
+     - Where to find: Entra admin center -> Groups -> your admin group -> `Object ID`
 8. Ensure workspace names in `workspaces/Fabric Blueprint/config.yml` match tfvars names for each environment.
 9. Run infrastructure:
    - GitHub Actions -> `Terraform — Fabric Infrastructure` -> select `dev`, then `test`, then `prod`
@@ -45,6 +46,7 @@ The included `workspaces/Fabric Blueprint` content is a minimum sample so the pi
 
 - First deployment path:
   - Focus on Service Principal + GitHub secrets, Terraform state backend, tfvars values, and workspace name alignment.
+  - `entra_admin_group_object_id` is required because Terraform assigns this Entra group the `Admin` workspace role.
 - Later (when you customize workspace content):
   - Update `workspaces/Fabric Blueprint/parameter_templates/*.yml` with your real Dev IDs.
   - Run local checks before PR:
