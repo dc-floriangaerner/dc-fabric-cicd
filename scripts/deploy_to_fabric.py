@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any
 
 import yaml
+from azure.identity import ClientSecretCredential  # backwards compatibility for external patches/tests
 from fabric_cicd import append_feature_flag, change_log_level, deploy_with_config  # type: ignore[import-untyped]
 
 # Import local modules using relative imports
@@ -262,9 +263,12 @@ def configure_runtime() -> None:
     append_feature_flag("enable_experimental_features")
     append_feature_flag("enable_config_deploy")
 
-    # Force unbuffered output for GitHub Actions logs
-    sys.stdout.reconfigure(line_buffering=True, write_through=True)
-    sys.stderr.reconfigure(line_buffering=True, write_through=True)
+    # Force unbuffered output for GitHub Actions logs.
+    # Use getattr for typing/runtime compatibility across stream implementations.
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if callable(reconfigure):
+            reconfigure(line_buffering=True, write_through=True)
 
     # Enable debugging if ACTIONS_RUNNER_DEBUG is set
     # Note: This only affects fabric_cicd library logging.
