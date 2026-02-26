@@ -37,14 +37,15 @@ concurrency:
 env:
   TF_VERSION: '1.9.0'
   TF_WORKING_DIR: './terraform'
+  TARGET_ENV: ${{ github.event_name == 'push' && 'dev' || inputs.environment }}
 
 jobs:
   terraform:
-    name: Terraform ${{ github.event_name == 'push' && 'Dev' || inputs.environment == 'dev' && 'Dev' || inputs.environment == 'test' && 'Test' || 'Production' }}
+    name: Terraform ${{ env.TARGET_ENV == 'dev' && 'Dev' || env.TARGET_ENV == 'test' && 'Test' || 'Production' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     environment:
-      name: ${{ github.event_name == 'push' && 'dev' || inputs.environment }}
+      name: ${{ env.TARGET_ENV }}
       url: https://app.fabric.microsoft.com
 
     env:
@@ -62,15 +63,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Resolve environment name
-        id: env
-        run: |
-          if [ "${{ github.event_name }}" == "push" ]; then
-            echo "environment=dev" >> $GITHUB_OUTPUT
-          else
-            echo "environment=${{ inputs.environment }}" >> $GITHUB_OUTPUT
-          fi
-
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
@@ -80,7 +72,7 @@ jobs:
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: |
           terraform init \
-            -backend-config="key=fabric-cicd-${{ steps.env.outputs.environment }}.tfstate"
+            -backend-config="key=fabric-cicd-${{ env.TARGET_ENV }}.tfstate"
 
       - name: Terraform Validate
         working-directory: ${{ env.TF_WORKING_DIR }}
@@ -91,12 +83,11 @@ jobs:
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: |
           terraform plan \
-            -var-file="environments/${{ steps.env.outputs.environment }}.tfvars" \
+            -var-file="environments/${{ env.TARGET_ENV }}.tfvars" \
             -out=tfplan \
             -no-color
 
       - name: Terraform Apply
-        if: steps.plan.outcome == 'success' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event_name == 'workflow_call')
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: |
           terraform apply \
