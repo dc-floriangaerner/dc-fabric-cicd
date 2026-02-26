@@ -1,5 +1,3 @@
-# Copyright (c) Microsoft Corporation.
-# Licensed under the MIT License.
 
 """Logging configuration for Fabric deployment scripts."""
 

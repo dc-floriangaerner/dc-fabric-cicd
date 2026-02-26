@@ -4,7 +4,6 @@ version = "1.0.0"
 description = "Reference architecture for Microsoft Fabric CI/CD with multiple workspace support"
 readme = "README.md"
 requires-python = ">=3.11"
-license = { text = "MIT" }
 authors = [
     { name = "Florian Gaerner", email = "florian.gaerner@datacentrics.com" }
 ]

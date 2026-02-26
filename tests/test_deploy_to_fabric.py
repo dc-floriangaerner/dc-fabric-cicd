@@ -1,5 +1,3 @@
-# Copyright (c) Microsoft Corporation.
-# Licensed under the MIT License.
 
 """Core tests for deploy_to_fabric.py deployment logic."""
 

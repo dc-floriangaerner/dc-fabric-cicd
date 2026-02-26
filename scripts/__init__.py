@@ -1,5 +1,3 @@
-# Copyright (c) Microsoft Corporation.
-# Licensed under the MIT License.
 
 """Fabric CI/CD deployment scripts package"""
 

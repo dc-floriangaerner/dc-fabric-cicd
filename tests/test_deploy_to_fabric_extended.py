@@ -1,5 +1,3 @@
-# Copyright (c) Microsoft Corporation.
-# Licensed under the MIT License.
 
 """Extended tests for deploy_to_fabric.py - covering missing functions."""
 

@@ -1272,7 +1272,6 @@ migrated_items = migrate_items(
 
 - **PyPI**: https://pypi.org/project/microsoft-fabric-api/
 - **Version**: 0.1.0b2 (Beta)
-- **License**: Microsoft
 
 ### Related Resources
 
@@ -1505,27 +1504,5 @@ This generates a JSON file with:
 **Document Version**: 2.0  
 **Last Updated**: February 13, 2026  
 **Status**: Complete - Based on full API discovery from fabric-api-complete-documentation.json
-
----
-
-## Contributing
-
-This documentation provides complete coverage of all 39 top-level modules in `microsoft-fabric-api` version 0.1.0b2.
-
-If you discover new API methods, corrections, or when the SDK version updates:
-
-1. Run the [fabric-api-exploration.ipynb](../scripts/fabric-api-exploration.ipynb) notebook to regenerate the JSON
-2. Update this document with new findings
-3. Share discoveries with the team
-4. Update the document version number
-
-**Maintenance Checklist**:
-- ✅ All 39 top-level modules documented
-- ✅ Admin module (10 sub-modules) documented
-- ✅ Core module (21 sub-modules) documented
-- ✅ Workload-specific modules documented with examples
-- ✅ Common patterns and usage examples provided
-
----
 
 *This documentation is based on `microsoft-fabric-api` version 0.1.0b2 and the complete API discovery performed on February 13, 2026. Always refer to official Microsoft documentation for the most up-to-date information.*

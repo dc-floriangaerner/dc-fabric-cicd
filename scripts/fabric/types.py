@@ -1,5 +1,3 @@
-# Copyright (c) Microsoft Corporation.
-# Licensed under the MIT License.
 
 """Shared dataclasses for Fabric deployment results."""
 

@@ -1,7 +1,6 @@
 # Fabric CI/CD Reference Architecture
 
 [![Python Version](https://img.shields.io/badge/python-3.11%2B-blue)](https://www.python.org/downloads/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 A reference architecture for implementing CI/CD pipelines for Microsoft Fabric workspaces using GitHub Actions and the `fabric-cicd` Python library. Supports deploying multiple workspaces from a single repository with automatic change detection.
 
@@ -445,18 +444,6 @@ This approach allows you to:
 - Version control documentation alongside code
 - Review documentation changes in Pull Requests
 - Keep documentation and code in sync
-
-## Contributing
-
-We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines on:
-- Reporting bugs and requesting features
-- Development workflow and branch strategy
-- Coding standards and testing requirements
-- Pull Request process
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## Resources
 

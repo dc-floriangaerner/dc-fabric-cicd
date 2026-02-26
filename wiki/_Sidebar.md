@@ -16,9 +16,6 @@
 
 ---
 
-## Contributing
-- [Wiki Contribution Guide](Wiki-Contribution)
-
 ## Resources
 - [Main README](https://github.com/dc-floriangaerner/dc-fabric-cicd/blob/main/README.md)
 - [Microsoft Fabric Docs](https://learn.microsoft.com/fabric/)

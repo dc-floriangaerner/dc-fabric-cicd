@@ -1,5 +1,3 @@
-# Copyright (c) Microsoft Corporation.
-# Licensed under the MIT License.
 
 """Scan workspace item files for GUIDs that have no matching find_replace rule in
 parameter.yml. Any unmatched GUID will be deployed verbatim, causing the file to

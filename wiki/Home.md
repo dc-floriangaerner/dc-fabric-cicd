@@ -54,10 +54,6 @@ workspaces/
 │   └── 4_Analytics/           # Semantic models, reports, agents
 ```
 
-## Contributing
-
-See the [Wiki Contribution Guide](Wiki-Contribution) for how to update this documentation, or the main [README](https://github.com/dc-floriangaerner/dc-fabric-cicd/blob/main/README.md) for contribution guidelines.
-
 ## Resources
 
 - [Microsoft Fabric Documentation](https://learn.microsoft.com/fabric/)

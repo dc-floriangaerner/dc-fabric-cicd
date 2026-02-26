@@ -1,5 +1,3 @@
-# Copyright (c) Microsoft Corporation.
-# Licensed under the MIT License.
 
 """Deploy workspaces to Fabric via GitHub Actions with continue-on-failure support"""
 
