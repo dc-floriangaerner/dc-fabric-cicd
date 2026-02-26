@@ -16,7 +16,7 @@ This directory contains the markdown files that are automatically synced to the 
 ## Automatic Sync
 
 When changes to files in this directory are pushed to the `main` branch, the `.github/workflows/sync-wiki.yml` workflow automatically:
-- Clones the wiki repository (`https://github.com/dc-floriangaerner/fabric-cicd.wiki.git`)
+- Clones the wiki repository (`https://github.com/dc-floriangaerner/dc-fabric-cicd.wiki.git`)
 - Copies all markdown files from `/wiki` to the wiki repository
 - Commits and pushes the changes to the wiki
 

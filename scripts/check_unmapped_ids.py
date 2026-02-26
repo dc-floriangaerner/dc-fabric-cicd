@@ -64,7 +64,7 @@ JSON_SENSITIVE_FIELDS = {
     "connectionId",
 }
 
-# Files that never require parameterisation — skip entirely
+# Files that never require parameterisation - skip entirely
 SKIP_FILENAMES = {
     "alm.settings.json",
     "shortcuts.metadata.json",
@@ -274,7 +274,7 @@ def is_covered(
                     if m.group(1) == guid:
                         return True
                 except IndexError:
-                    # Pattern has no capture group — treat full match as hit
+                    # Pattern has no capture group - treat full match as hit
                     if guid in m.group(0):
                         return True
         else:
@@ -454,10 +454,10 @@ def _github_error(file: str, title: str, message: str) -> None:
 def report_results(all_unmapped: list[UnmappedGuid], is_github_actions: bool) -> None:
     """Print a human-readable (and optionally annotated) report."""
     if not all_unmapped:
-        logger.info("✓ No unmapped IDs found. All GUIDs are covered by parameter rules.")
+        logger.info("[OK] No unmapped IDs found. All GUIDs are covered by parameter rules.")
         return
 
-    logger.info(f"  Found {len(all_unmapped)} unmapped GUID(s) — add a find_replace rule for each:\n")
+    logger.info(f"  Found {len(all_unmapped)} unmapped GUID(s) - add a find_replace rule for each:\n")
 
     # ── column widths ──────────────────────────────────────────────────────────
     COL_GUID = 36
@@ -481,7 +481,7 @@ def report_results(all_unmapped: list[UnmappedGuid], is_github_actions: bool) ->
 
     # Emit GitHub Actions annotations after the table so they don't fragment it.
     # These workflow commands register file-level PR annotations and must be
-    # printed to stdout — they are invisible in the rendered Actions UI.
+    # printed to stdout - they are invisible in the rendered Actions UI.
     if is_github_actions:
         for u in all_unmapped:
             msg = f'GUID {u.guid} in field "{u.field_name}" has no matching find_replace rule in parameter.yml'
@@ -530,7 +530,7 @@ def main(argv: list[str] | None = None) -> int:
     is_github_actions = os.environ.get("GITHUB_ACTIONS", "").lower() == "true"
 
     logger.info(SEPARATOR_LONG)
-    logger.info("Fabric CI/CD — Unmapped ID Scanner")
+    logger.info("Fabric CI/CD - Unmapped ID Scanner")
     logger.info(SEPARATOR_LONG)
 
     # Discover workspaces
@@ -542,7 +542,7 @@ def main(argv: list[str] | None = None) -> int:
             return EXIT_FAILURE
 
     if not all_workspaces:
-        logger.warning("No workspaces with config.yml found — nothing to scan.")
+        logger.warning("No workspaces with config.yml found - nothing to scan.")
         return EXIT_SUCCESS
 
     logger.info(f"Scanning {len(all_workspaces)} workspace(s)...\n")
@@ -553,9 +553,9 @@ def main(argv: list[str] | None = None) -> int:
         logger.info(f"Workspace: {workspace_folder}")
         unmapped = scan_workspace(workspace_folder, workspaces_dir, repo_root)
         if unmapped:
-            logger.info(f"  ✗ {len(unmapped)} unmapped GUID(s) detected")
+            logger.info(f"  [FAIL] {len(unmapped)} unmapped GUID(s) detected")
         else:
-            logger.info("  ✓ All GUIDs are covered")
+            logger.info("  [OK] All GUIDs are covered")
         all_unmapped.extend(unmapped)
 
     logger.info(f"\n{SEPARATOR_LONG}")

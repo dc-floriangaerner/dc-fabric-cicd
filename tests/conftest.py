@@ -26,12 +26,6 @@ def sample_workspace_config() -> dict[str, Any]:
 
 
 @pytest.fixture
-def sample_parameter_config() -> dict[str, Any]:
-    """Return a sample parameter configuration."""
-    return {"find_replace": [{"find_value": "old-value", "replace_value": {"_ALL_": "new-value"}, "is_regex": "false"}]}
-
-
-@pytest.fixture
 def temp_workspace_dir(tmp_path: Path) -> Path:
     """Create a temporary workspace directory structure for testing."""
     workspace_dir = tmp_path / "workspaces" / "Test Workspace"

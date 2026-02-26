@@ -9,6 +9,7 @@ on:
     paths:
       - 'scripts/**'
       - 'tests/**'
+      - 'workspaces/**'
       - 'requirements.txt'
       - 'requirements-dev.txt'
       - 'pyproject.toml'
@@ -16,6 +17,11 @@ on:
 
 env:
   PYTHON_VERSION: '3.12'
+
+# Cancel outdated PR runs to shorten feedback cycles.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -35,17 +41,26 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: 'pip'
+          cache-dependency-path: |
+            requirements.txt
+            requirements-dev.txt
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install -r requirements-dev.txt
+          python -m pip install -r requirements.txt
+          python -m pip install -r requirements-dev.txt
+
+      - name: Scan for unmapped IDs
+        run: |
+          echo "::group::Unmapped ID Scan"
+          python -m scripts.check_unmapped_ids --workspaces_directory workspaces
+          echo "::endgroup::"
 
       - name: Run pytest with coverage
         run: |
           echo "::group::Pytest"
-          pytest tests/ -v --cov=scripts --cov-report=term-missing --cov-report=html --cov-report=xml
+          python -m pytest tests/ --cov-report=xml
           echo "::endgroup::"
 
       - name: Upload coverage report

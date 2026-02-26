@@ -104,7 +104,7 @@ Configure the following **GitHub Secrets** in your repository:
 
 Create environments to organize deployments:
 1. Go to Settings → Environments
-2. Create environments: `dev`, `test`, `production`
+2. Create environments: `dev`, `test`, `prod`
 3. Configure deployment branch rules (e.g., "Protected branches only")
 
 > **Note**: Required reviewers require GitHub Team/Enterprise. This architecture uses manual workflow triggers for Test and Prod instead.
@@ -423,13 +423,13 @@ find_replace:
 
 ### GitHub Wiki
 
-Comprehensive documentation is maintained in the [GitHub Wiki](https://github.com/dc-floriangaerner/fabric-cicd/wiki):
+Comprehensive documentation is maintained in the [GitHub Wiki](https://github.com/dc-floriangaerner/dc-fabric-cicd/wiki):
 
-- **[Home](https://github.com/dc-floriangaerner/fabric-cicd/wiki/Home)** - Wiki overview and quick links
-- **[Setup Guide](https://github.com/dc-floriangaerner/fabric-cicd/wiki/Setup-Guide)** - Step-by-step setup instructions
-- **[Workspace Configuration](https://github.com/dc-floriangaerner/fabric-cicd/wiki/Workspace-Configuration)** - Configure workspaces with config.yml and parameter.yml
-- **[Deployment Workflow](https://github.com/dc-floriangaerner/fabric-cicd/wiki/Deployment-Workflow)** - Understand the CI/CD pipeline
-- **[Troubleshooting](https://github.com/dc-floriangaerner/fabric-cicd/wiki/Troubleshooting)** - Common issues and solutions
+- **[Home](https://github.com/dc-floriangaerner/dc-fabric-cicd/wiki/Home)** - Wiki overview and quick links
+- **[Setup Guide](https://github.com/dc-floriangaerner/dc-fabric-cicd/wiki/Setup-Guide)** - Step-by-step setup instructions
+- **[Workspace Configuration](https://github.com/dc-floriangaerner/dc-fabric-cicd/wiki/Workspace-Configuration)** - Configure workspaces with config.yml and parameter.yml
+- **[Deployment Workflow](https://github.com/dc-floriangaerner/dc-fabric-cicd/wiki/Deployment-Workflow)** - Understand the CI/CD pipeline
+- **[Troubleshooting](https://github.com/dc-floriangaerner/dc-fabric-cicd/wiki/Troubleshooting)** - Common issues and solutions
 
 ### Editing Wiki Documentation
 
