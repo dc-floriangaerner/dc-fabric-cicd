@@ -39,6 +39,7 @@
 - [ ] No hardcoded IDs or environment-specific values
 - [ ] parameter.yml updated if new IDs need transformation
 - [ ] Documentation updated (if needed)
+- [ ] AI tools (e.g., GitHub Copilot) were used
 - [ ] Commit messages are clear and descriptive
 - [ ] No sensitive information in commit history
 
