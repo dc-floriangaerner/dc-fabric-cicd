@@ -20,7 +20,7 @@ Scripts in the `scripts/` directory are organized as a Python package:
 - **Python Version**: 3.11+
 - **Type Hints**: Always use type hints for function parameters and return types
 - **Error Handling**: Catch specific exceptions, use `sys.exit(1)` for errors
-- **Logging**: Use centralized logger from scripts.logger module: `logger = get_logger(__name__)`
+- **Logging**: Use centralized logger from `scripts.common.logger`: `logger = get_logger(__name__)`
 - **Docstrings**: Include for all public functions with Args and Returns sections
 
 ### Code Quality
@@ -40,7 +40,7 @@ mypy scripts/
 
 ```python
 from azure.core.exceptions import HttpResponseError
-from .logger import get_logger
+from ..common.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -70,8 +70,8 @@ credential = ClientSecretCredential(
 ### Common Patterns
 
 **Configuration Management:**
-- Constants defined in `scripts/deployment_config.py`
-- Import as: `from .deployment_config import VALID_ENVIRONMENTS`
+- Constants defined in `scripts/fabric/config.py`
+- Import as: `from .fabric.config import VALID_ENVIRONMENTS`
 
 **Return Values:**
 - Return `bool` for success/failure operations
@@ -88,7 +88,7 @@ This is a reference architecture - no automated tests required for scripts. Manu
 ### Files in This Directory
 
 - `deploy_to_fabric.py` - Main deployment orchestration script
-- `deployment_config.py` - Centralized configuration constants
+- `fabric/config.py` - Centralized configuration constants
 - `fabric_workspace_manager.py` - Workspace management utilities
 - `generate_deployment_summary.sh` - Bash script for deployment summaries
 - `*.ipynb` - Jupyter notebooks for API exploration (not used in CI/CD)

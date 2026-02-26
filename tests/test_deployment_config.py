@@ -1,9 +1,9 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
-"""Tests for deployment_config.py constants."""
+"""Tests for scripts.fabric.config constants."""
 
-from scripts.deployment_config import (
+from scripts.fabric.config import (
     CONFIG_FILE,
     ENV_ACTIONS_RUNNER_DEBUG,
     ENV_AZURE_CLIENT_ID,

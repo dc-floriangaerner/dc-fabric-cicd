@@ -164,7 +164,7 @@ unpublish:
 
 Yes! The deployment scripts are in `scripts/` directory:
 - `deploy_to_fabric.py` — Main deployment orchestration
-- `deployment_config.py` — Configuration constants
+- `fabric/config.py` — Configuration constants
 
 Follow the [GitHub workflow](https://github.com/dc-floriangaerner/dc-fabric-cicd/blob/main/.github/copilot-instructions.md#making-changes-to-this-repository) for making changes.
 
