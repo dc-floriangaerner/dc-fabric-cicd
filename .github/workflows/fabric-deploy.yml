@@ -34,23 +34,13 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  # Deploy job - dynamically deploys to the triggered environment only
-  # Triggers:
-  #   - Dev: Automatic on push to main, or manual via workflow_dispatch
-  #   - Test/Prod: Manual only via workflow_dispatch
-  # Note: Test and Prod require manual approval if environment protection rules are configured
-  # Note: Workspace discovery happens automatically in the Python deployment script
-  deploy:
-    name: Deploy to ${{ github.event_name == 'push' && 'Dev' || inputs.environment == 'dev' && 'Dev' || inputs.environment == 'test' && 'Test' || 'Production' }}
+  set-environment:
+    name: Resolve deployment environment
     runs-on: ubuntu-latest
-    timeout-minutes: 30
-    environment:
-      name: ${{ github.event_name == 'push' && 'dev' || inputs.environment }}
-      url: https://app.fabric.microsoft.com
+    outputs:
+      environment: ${{ steps.set-env.outputs.environment }}
+      trigger_type: ${{ steps.set-env.outputs.trigger_type }}
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
       - name: Set environment variables
         id: set-env
         run: |
@@ -61,6 +51,32 @@ jobs:
             echo "environment=${{ inputs.environment }}" >> $GITHUB_OUTPUT
             echo "trigger_type=Manual" >> $GITHUB_OUTPUT
           fi
+
+  terraform:
+    name: Run Terraform prerequisites
+    needs: [set-environment]
+    uses: ./.github/workflows/terraform.yml
+    with:
+      environment: ${{ needs.set-environment.outputs.environment }}
+    secrets: inherit
+
+  # Deploy job - dynamically deploys to the triggered environment only
+  # Triggers:
+  #   - Dev: Automatic on push to main, or manual via workflow_dispatch
+  #   - Test/Prod: Manual only via workflow_dispatch
+  # Note: Test and Prod require manual approval if environment protection rules are configured
+  # Note: Workspace discovery happens automatically in the Python deployment script
+  deploy:
+    name: Deploy to ${{ needs.set-environment.outputs.environment == 'dev' && 'Dev' || needs.set-environment.outputs.environment == 'test' && 'Test' || 'Production' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [set-environment, terraform]
+    environment:
+      name: ${{ needs.set-environment.outputs.environment }}
+      url: https://app.fabric.microsoft.com
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -91,7 +107,7 @@ jobs:
         run: |
           python -u -m scripts.deploy_to_fabric \
             --workspaces_directory "${{ env.WORKSPACES_DIRECTORY }}" \
-            --environment "${{ steps.set-env.outputs.environment }}"
+            --environment "${{ needs.set-environment.outputs.environment }}"
         env:
           AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
           AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
@@ -101,7 +117,7 @@ jobs:
         if: always()
         run: |
           # Generate deployment summary using reusable script
-          bash scripts/generate_deployment_summary.sh "${{ steps.set-env.outputs.environment }}" "${{ steps.set-env.outputs.trigger_type }}"
+          bash scripts/generate_deployment_summary.sh "${{ needs.set-environment.outputs.environment }}" "${{ needs.set-environment.outputs.trigger_type }}"
         env:
           JOB_STATUS: ${{ job.status }}
 
@@ -109,7 +125,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: deployment-results-${{ steps.set-env.outputs.environment }}-${{ github.run_number }}
+          name: deployment-results-${{ needs.set-environment.outputs.environment }}-${{ github.run_number }}
           path: deployment-results.json
           if-no-files-found: warn
           retention-days: 30

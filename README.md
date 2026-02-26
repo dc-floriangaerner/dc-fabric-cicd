@@ -183,7 +183,7 @@ git push origin feature/my-feature
 
 After successful Dev deployment and manual verification:
 
-**Deploy to Test or Production:**
+**Deploy to Test or Production (Terraform runs first automatically):**
 1. Go to **Actions** tab → **Deploy to Microsoft Fabric**
 2. Click **Run workflow**
 3. Select the target environment from dropdown:
@@ -192,31 +192,48 @@ After successful Dev deployment and manual verification:
    - `prod` - Production environment
 4. Click **Run workflow** button
 
+### 6. Terraform-Only Run (Optional)
+
+Use this when you need to initialize or update infrastructure/workspaces before any content deployment (for example at project start, when no workspaces exist yet).
+
+1. Go to **Actions** tab → **Terraform — Fabric Infrastructure**
+2. Click **Run workflow**
+3. Select `dev`, `test`, or `prod`
+4. Click **Run workflow**
+
 ## CI/CD Pipeline
 
 ### Workflow Stages
 
 ```mermaid
 graph LR
-    A[PR Merged to Main] --> B[Auto Deploy All Workspaces to Dev]
-    B --> C{Verify Dev}
-    C -->|Success| D[Manual: Run Workflow]
-    D --> E{Select Environment}
-    E -->|Test| F[Deploy All Workspaces to Test]
-    E -->|Prod| G[Deploy All Workspaces to Prod]
-    F --> H{Verify Test}
-    H -->|Success| I[Manual: Run Workflow]
-    I --> J{Select Environment}
-    J -->|Prod| G
+    A[PR Merged to Main] --> B[Terraform Apply Dev]
+    B --> C[Deploy All Workspaces to Dev]
+    C --> D{Verify Dev}
+    D -->|Success| E[Manual: Run Workflow]
+    E --> F{Select Environment}
+    F -->|Test| G[Terraform Apply Test]
+    F -->|Prod| H[Terraform Apply Prod]
+    G --> I[Deploy All Workspaces to Test]
+    I --> J{Verify Test}
+    J -->|Success| K[Manual: Run Workflow]
+    K --> L[Terraform Apply Prod]
+    H --> M[Deploy All Workspaces to Prod]
+    L --> M[Deploy All Workspaces to Prod]
 ```
 
 ### Deployment Environments
 
 | Environment | Trigger | Use Case |
 |-------------|---------|----------|
-| **Dev** | Auto on merge to `main` | Automatic deployment for rapid iteration |
-| **Test** | Manual workflow dispatch | After Dev verification |
-| **Production** | Manual workflow dispatch | After Test verification |
+| **Dev** | Auto on merge to `main` (`workspaces/**`) | Terraform then deployment for rapid iteration |
+| **Test** | Manual workflow dispatch | Terraform then deployment after Dev verification |
+| **Production** | Manual workflow dispatch | Terraform then deployment after Test verification |
+
+### Workflow Behavior
+
+1. **Deploy to Microsoft Fabric** workflow now runs Terraform first, then starts Fabric deployment.
+2. **Terraform — Fabric Infrastructure** workflow remains available for standalone infrastructure/workspace setup.
 
 ### Deployment Process
 
