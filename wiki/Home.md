@@ -41,5 +41,5 @@ Use `README.md` for fast setup, then use these pages for details.
 ## External References
 
 - [Microsoft Fabric docs](https://learn.microsoft.com/fabric/)
-- [fabric-cicd package](https://pypi.org/project/fabric-cicd/)
+- [fabric-cicd docs](https://microsoft.github.io/fabric-cicd/)
 - [GitHub Actions docs](https://docs.github.com/actions)

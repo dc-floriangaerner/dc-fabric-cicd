@@ -19,4 +19,4 @@
 ## Resources
 - [Main README](https://github.com/dc-floriangaerner/dc-fabric-cicd/blob/main/README.md)
 - [Microsoft Fabric Docs](https://learn.microsoft.com/fabric/)
-- [fabric-cicd Library](https://pypi.org/project/fabric-cicd/)
+- [fabric-cicd Library](https://microsoft.github.io/fabric-cicd/)

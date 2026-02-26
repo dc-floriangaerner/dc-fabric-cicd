@@ -2,6 +2,6 @@
 
 **Quick Links**: [Home](Home) · [Setup Guide](Setup-Guide) · [Workspace Configuration](Workspace-Configuration) · [Deployment Workflow](Deployment-Workflow) · [Troubleshooting](Troubleshooting) · [FAQ](FAQ)
 
-**Resources**: [Main README](https://github.com/dc-floriangaerner/dc-fabric-cicd) · [Microsoft Fabric Docs](https://learn.microsoft.com/fabric/) · [fabric-cicd Library](https://pypi.org/project/fabric-cicd/)
+**Resources**: [Main README](https://github.com/dc-floriangaerner/dc-fabric-cicd) · [Microsoft Fabric Docs](https://learn.microsoft.com/fabric/) · [fabric-cicd Library](https://microsoft.github.io/fabric-cicd/)
 
 **Need Help?** Start with [Troubleshooting](Troubleshooting), then [FAQ](FAQ).
