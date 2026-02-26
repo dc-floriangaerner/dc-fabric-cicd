@@ -267,10 +267,8 @@ def configure_runtime() -> None:
     append_feature_flag("enable_config_deploy")
 
     # Force unbuffered output for GitHub Actions logs
-    for stream in (sys.stdout, sys.stderr):
-        reconfigure = getattr(stream, "reconfigure", None)
-        if callable(reconfigure):
-            reconfigure(line_buffering=True, write_through=True)
+    sys.stdout.reconfigure(line_buffering=True, write_through=True)
+    sys.stderr.reconfigure(line_buffering=True, write_through=True)
 
     # Enable debugging if ACTIONS_RUNNER_DEBUG is set
     # Note: This only affects fabric_cicd library logging.
