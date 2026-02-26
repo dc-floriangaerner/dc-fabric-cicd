@@ -81,10 +81,6 @@ def get_workspace_name_from_config(config: dict[str, Any], environment: str) -> 
         ) from None
 
 
-# Alias for backwards compatibility with tests
-get_workspace_name_for_environment = get_workspace_name_from_config
-
-
 def get_workspace_folders(workspaces_dir: str) -> list[str]:
     """Get all workspace folders from the workspaces directory.
 
