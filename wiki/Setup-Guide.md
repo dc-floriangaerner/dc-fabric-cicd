@@ -1,120 +1,82 @@
-# Setup Guide: GitHub Actions CI/CD for Microsoft Fabric
+# Setup Guide
 
-This guide walks you through setting up the CI/CD pipeline for multi-workspace Fabric deployments.
+This guide gets you from clone to first successful deployment.
 
-**⏱️ Estimated Time**: 30-45 minutes
+## Prerequisites
 
-**📋 What You'll Accomplish**:
-- Create Azure Service Principal for authentication
-- Bootstrap Terraform state storage (one-time)
-- Provision Fabric workspaces with Terraform
-- Configure GitHub repository secrets
-- Test automated deployment to Dev environment
+- Microsoft Fabric tenant and capacity access.
+- Permission to create an Entra ID Service Principal.
+- GitHub repository admin access (for secrets and environments).
+- Azure subscription access for Terraform state storage.
 
-## Prerequisites Checklist
+## Step 1: Create Service Principal
 
-- [ ] Microsoft Fabric workspace access (Admin or Contributor)
-- [ ] Microsoft Entra ID tenant access to create Service Principal
-- [ ] GitHub repository with Actions enabled
-- [ ] Azure subscription access to create a storage account (for Terraform state)
+Create one Service Principal and capture:
+- `AZURE_CLIENT_ID`
+- `AZURE_CLIENT_SECRET`
+- `AZURE_TENANT_ID`
 
-## Step 1: Create Azure Service Principal
-
-**⏱️ Time**: ~10 minutes
-
-### Using Azure Portal
-
-1. Navigate to **Microsoft Entra ID** → **App registrations**
-2. Click **New registration**
-3. Name: `fabric-cicd-deployment`
-4. Click **Register**
-5. Copy the **Application (client) ID** (this is `AZURE_CLIENT_ID`)
-6. Copy the **Directory (tenant) ID** (this is `AZURE_TENANT_ID`)
-7. Go to **Certificates & secrets** → **New client secret**
-8. Add description: `GitHub Actions`
-9. Copy the **secret value** (this is `AZURE_CLIENT_SECRET`)
-
-### Using Azure CLI
-
-```bash
-# Login to Azure
-az login
-
-# Create Service Principal
-SP_OUTPUT=$(az ad sp create-for-rbac --name "fabric-cicd-deployment" --skip-assignment)
-
-# Extract values
-echo "AZURE_CLIENT_ID:" $(echo $SP_OUTPUT | jq -r '.clientId')
-echo "AZURE_CLIENT_SECRET:" $(echo $SP_OUTPUT | jq -r '.clientSecret')
-echo "AZURE_TENANT_ID:" $(echo $SP_OUTPUT | jq -r '.tenantId')
-
-```
+The same principal is used by:
+- `terraform.yml` (workspace provisioning)
+- `fabric-deploy.yml` (content deployment)
 
 ## Step 2: Bootstrap Terraform State Storage (One-Time)
 
-**⏱️ Time**: ~5 minutes
+Create Azure Blob Storage for Terraform backend state if you do not already have one.
 
-Terraform tracks what it has created using a state file. The file is stored in Azure Blob Storage so all CI/CD runs share the same state.
+Default backend settings in `terraform/main.tf`:
+- `resource_group_name = "rg-fabric-cicd-tfstate"`
+- `storage_account_name = "stsfabriccicdtfstate"`
+- `container_name = "tfstate"`
 
-Create the storage account once — Terraform manages everything after that.
+If you use different names, update `terraform/main.tf` accordingly.
 
-```bash
-# Set variables (storage account name must be globally unique, lowercase, 3–24 chars)
-RESOURCE_GROUP="rg-fabric-cicd-tfstate"
-STORAGE_ACCOUNT="stsfabriccicdtfstate"
-CONTAINER="tfstate"
-LOCATION="westeurope"
+Grant the Service Principal `Storage Blob Data Contributor` on the storage account scope.
 
-# Create resource group and storage
-az group create --name $RESOURCE_GROUP --location $LOCATION
-az storage account create \
-  --name $STORAGE_ACCOUNT \
-  --resource-group $RESOURCE_GROUP \
-  --location $LOCATION \
-  --sku Standard_LRS \
-  --kind StorageV2 \
-  --min-tls-version TLS1_2
-az storage container create \
-  --name $CONTAINER \
-  --account-name $STORAGE_ACCOUNT \
-  --auth-mode login
-```
+## Step 3: Configure Terraform Inputs
 
-Then grant the Service Principal access to write state:
+Edit all environment files:
+- `terraform/environments/dev.tfvars`
+- `terraform/environments/test.tfvars`
+- `terraform/environments/prod.tfvars`
 
-```bash
-SP_OBJECT_ID=$(az ad sp show --id $AZURE_CLIENT_ID --query id -o tsv)
-az role assignment create \
-  --assignee $SP_OBJECT_ID \
-  --role "Storage Blob Data Contributor" \
-  --scope "/subscriptions/<subscription-id>/resourceGroups/$RESOURCE_GROUP/storageAccounts/$STORAGE_ACCOUNT"
-```
+Set real values for:
+- `workspace_name_fabric_blueprint`
+- `capacity_id`
+- `entra_admin_group_object_id`
 
-Update `terraform/main.tf` `backend "azurerm"` block if you used different names.
+Important:
+- `workspace_name_fabric_blueprint` must match the workspace name in `workspaces/Fabric Blueprint/config.yml` for the same environment.
+- Placeholder GUIDs like `00000000-0000-0000-0000-000000000000` must be replaced.
 
-## Step 3: Provision Fabric Workspaces with Terraform
+## Step 4: Configure GitHub Secrets
 
-**⏱️ Time**: ~10 minutes
+Create repository secrets:
+- `AZURE_CLIENT_ID`
+- `AZURE_CLIENT_SECRET`
+- `AZURE_TENANT_ID`
+- `ARM_SUBSCRIPTION_ID`
 
-Workspace lifecycle is managed by Terraform — **not** by the Python deployment scripts.
+## Step 5: Configure GitHub Environments
 
-### 3a — Populate tfvars files
+Create GitHub Environments with exact names:
+- `dev`
+- `test`
+- `prod`
 
-Edit the three files under `terraform/environments/`:
+These names are used directly by workflow jobs.
 
-| File | Purpose |
-|---|---|
-| `dev.tfvars` | Dev workspace name, capacity ID, Entra group OID |
-| `test.tfvars` | Test workspace name, capacity ID, Entra group OID |
-| `prod.tfvars` | Prod workspace name, capacity ID, Entra group OID |
+## Step 6: Provision Workspaces
 
-| Variable | Where to find it |
-|---|---|
-| `workspace_name_*` | Already matches `workspaces/*/config.yml` — e.g. `[D] Fabric Blueprint` |
-| `capacity_id` | Fabric Admin Portal → Capacity Settings → GUID |
-| `entra_admin_group_object_id` | Azure AD → Groups → your admin group → Object ID |
+Run workflow:
+- GitHub Actions -> `Terraform — Fabric Infrastructure`
 
-### 3b — Run first apply
+Run it for:
+1. `dev`
+2. `test`
+3. `prod`
+
+You can also run Terraform locally:
 
 ```bash
 cd terraform
@@ -122,89 +84,46 @@ terraform init -backend-config="key=fabric-cicd-dev.tfstate"
 terraform apply -var-file=environments/dev.tfvars
 ```
 
-Repeat for `test.tfvars` and `prod.tfvars`, using the matching state key:
+Use the matching state key for `test` and `prod`.
+
+## Step 7: Configure Content Mapping
+
+Update content mapping rules with your real Dev IDs:
+- `workspaces/Fabric Blueprint/parameter_templates/nb_parameters.yml`
+- `workspaces/Fabric Blueprint/parameter_templates/cp_parameters.yml`
+
+`workspaces/Fabric Blueprint/parameter.yml` already extends these templates.
+
+## Step 8: Validate Locally
+
+Run before opening your first PR:
 
 ```bash
-# Test
-terraform init -reconfigure -backend-config="key=fabric-cicd-test.tfstate"
-terraform apply -var-file=environments/test.tfvars
-
-# Prod
-terraform init -reconfigure -backend-config="key=fabric-cicd-prod.tfstate"
-terraform apply -var-file=environments/prod.tfvars
+python -m scripts.check_unmapped_ids --workspaces_directory workspaces
+pytest tests/ -v
 ```
 
-After this, the workspace exists and the CI/CD pipeline can deploy items into it.
+## Step 9: Deploy
 
-> **Note**: The Service Principal that creates the workspace is automatically granted Admin access.
-> No separate role assignment is needed for the SP itself.
+### Dev (automatic)
+- Merge a PR to `main` with changes under `workspaces/**`.
 
-## Step 4: Configure GitHub Secrets
+### Test/Prod (manual)
+- GitHub Actions -> `Deploy to Microsoft Fabric` -> `Run workflow` -> select `test` or `prod`.
 
-**⏱️ Time**: ~5 minutes
+The deploy workflow always runs Terraform prerequisites first.
 
-1. Go to your GitHub repository
-2. Navigate to **Settings** → **Secrets and variables** → **Actions**
-3. Click **New repository secret** for each:
+## Done Checklist
 
-### Required Secrets
+- [ ] `terraform/environments/*.tfvars` updated with real IDs
+- [ ] Workspace names aligned between tfvars and `config.yml`
+- [ ] GitHub secrets configured (`AZURE_*`, `ARM_SUBSCRIPTION_ID`)
+- [ ] `terraform.yml` succeeded for `dev`, `test`, `prod`
+- [ ] `check_unmapped_ids` passed
+- [ ] First deployment to Dev completed
 
-| Secret Name | Description | Where to Find |
-|------------|-------------|---------------|
-| `AZURE_CLIENT_ID` | Service Principal Client ID | Azure AD App Registration → Overview |
-| `AZURE_CLIENT_SECRET` | Service Principal Secret | Azure AD App Registration → Certificates & secrets |
-| `AZURE_TENANT_ID` | Azure AD Tenant ID | Azure AD App Registration → Overview |
-| `ARM_SUBSCRIPTION_ID` | Azure subscription ID | Azure Portal → Subscriptions |
+## Next
 
-## Step 5: Test the Pipeline
-
-**⏱️ Time**: ~15-20 minutes
-
-### Test Dev Deployment (Automatic)
-
-1. Create a test change in a workspace:
-```bash
-git checkout -b feature/test-deployment
-echo "# Test" >> workspaces/"Fabric Blueprint"/test.md
-git add workspaces/"Fabric Blueprint"/test.md
-git commit -m "test: verify CI/CD pipeline"
-git push origin feature/test-deployment
-```
-
-2. Create Pull Request to `main`
-3. Merge the PR
-4. Watch the **Actions** tab for automatic deployment to Dev
-
-### Test Manual Deployment to Test/Production
-
-1. Go to **Actions** → **Deploy to Microsoft Fabric**
-2. Click **Run workflow**
-3. Select environment (**test** or **prod**)
-4. Click **Run workflow** button
-5. Monitor the deployment in the Actions tab
-
-## ✅ Success Criteria
-
-You've successfully completed setup when:
-
-- [ ] Service Principal created with Client ID, Secret, and Tenant ID recorded
-- [ ] Terraform state storage created and SP granted access
-- [ ] Workspaces provisioned for Dev (and Test/Prod as needed) via Terraform
-- [ ] All required GitHub secrets configured
-- [ ] Test deployment to Dev succeeded without errors
-- [ ] Workspace items deployed correctly to Dev workspace
-- [ ] GitHub Actions workflow completed with green checkmark
-
-**What's Next?** If all criteria are met, you're ready to configure your workspaces and deploy!
-
-## Next Steps
-
-- Configure [Workspace Configuration](Workspace-Configuration) for your workspaces
-- Review the [Deployment Workflow](Deployment-Workflow) to understand the deployment process
-- Check [Troubleshooting](Troubleshooting) for common issues
-
-## Resources
-
-- [Full Setup Documentation (SETUP.md)](https://github.com/dc-floriangaerner/dc-fabric-cicd/blob/main/SETUP.md)
-- [Microsoft Fabric Documentation](https://learn.microsoft.com/fabric/)
-- [GitHub Actions Documentation](https://docs.github.com/actions)
+- [Workspace Configuration](Workspace-Configuration)
+- [Deployment Workflow](Deployment-Workflow)
+- [Troubleshooting](Troubleshooting)
