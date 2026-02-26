@@ -40,7 +40,7 @@ jobs:
     name: Run Terraform prerequisites
     uses: ./.github/workflows/terraform.yml
     with:
-      environment: ${{ env.TARGET_ENV }}
+      environment: ${{ github.event_name == 'push' && 'dev' || inputs.environment }}
     secrets: inherit
 
   # Deploy job - dynamically deploys to the triggered environment only
@@ -50,12 +50,12 @@ jobs:
   # Note: Test and Prod require manual approval if environment protection rules are configured
   # Note: Workspace discovery happens automatically in the Python deployment script
   deploy:
-    name: Deploy to ${{ env.TARGET_ENV == 'dev' && 'Dev' || env.TARGET_ENV == 'test' && 'Test' || 'Production' }}
+    name: Deploy to ${{ github.event_name == 'push' && 'Dev' || inputs.environment == 'dev' && 'Dev' || inputs.environment == 'test' && 'Test' || 'Production' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     needs: [terraform]
     environment:
-      name: ${{ env.TARGET_ENV }}
+      name: ${{ github.event_name == 'push' && 'dev' || inputs.environment }}
       url: https://app.fabric.microsoft.com
     steps:
       - name: Checkout repository
