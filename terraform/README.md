@@ -113,11 +113,22 @@ az login --service-principal `
   --password $AZURE_CLIENT_SECRET `
   --tenant $AZURE_TENANT_ID
 
-# Initialize
-terraform init
+# Initialize — pass the environment-specific state key
+terraform init -backend-config="key=fabric-cicd-dev.tfstate"
 
 # Apply
 terraform apply -var-file=environments/dev.tfvars
+```
+
+Use the matching key for other environments:
+```powershell
+# Test
+terraform init -reconfigure -backend-config="key=fabric-cicd-test.tfstate"
+terraform apply -var-file=environments/test.tfvars
+
+# Prod
+terraform init -reconfigure -backend-config="key=fabric-cicd-prod.tfstate"
+terraform apply -var-file=environments/prod.tfvars
 ```
 
 ---
@@ -136,6 +147,16 @@ terraform apply -var-file=environments/dev.tfvars
 ## State Management
 
 Terraform state is stored in Azure Blob Storage with automatic state locking. Concurrent runs are prevented by the `concurrency` setting in `terraform.yml`.
+
+Each environment uses an **isolated state file** so that dev, test, and prod workspaces are fully independent resources:
+
+| Environment | State key |
+|---|---|
+| dev | `fabric-cicd-dev.tfstate` |
+| test | `fabric-cicd-test.tfstate` |
+| prod | `fabric-cicd-prod.tfstate` |
+
+The `key` is **not** hardcoded in `main.tf` — it is supplied at `terraform init` time via `-backend-config="key=..."` (done automatically by the workflow).
 
 ---
 
