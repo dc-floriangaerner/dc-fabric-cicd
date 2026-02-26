@@ -122,7 +122,7 @@ terraform init -backend-config="key=fabric-cicd-dev.tfstate"
 terraform apply -var-file=environments/dev.tfvars
 ```
 
-Repeat for `test.tfvars` and `prod.tfvars` with the matching state key:
+Repeat for `test.tfvars` and `prod.tfvars`, using the matching state key:
 
 ```bash
 # Test
