@@ -218,6 +218,7 @@ graph LR
     I --> J{Verify Test}
     J -->|Success| K[Manual: Run Workflow]
     K --> L[Terraform Apply Prod]
+    H --> M[Deploy All Workspaces to Prod]
     L --> M[Deploy All Workspaces to Prod]
 ```
 
