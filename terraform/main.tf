@@ -1,10 +1,10 @@
 terraform {
-  required_version = ">= 1.9"
+  required_version = ">= 1.8, < 2.0"
 
   required_providers {
     fabric = {
       source  = "microsoft/fabric"
-      version = "~> 0.1"
+      version = "~> 1.7"
     }
   }
 
@@ -12,7 +12,8 @@ terraform {
     resource_group_name  = "rg-fabric-cicd-tfstate"
     storage_account_name = "stsfabriccicdtfstate"
     container_name       = "tfstate"
-    key                  = "fabric-cicd.tfstate"
+    # key is supplied at init time via -backend-config so each environment
+    # gets its own isolated state file (dev / test / prod)
   }
 }
 
@@ -33,6 +34,9 @@ resource "fabric_workspace" "fabric_blueprint" {
 
 resource "fabric_workspace_role_assignment" "fabric_blueprint_admin_group" {
   workspace_id = fabric_workspace.fabric_blueprint.id
-  principal_id = var.entra_admin_group_object_id
-  role         = "Admin"
+  principal = {
+    id   = var.entra_admin_group_object_id
+    type = "Group"
+  }
+  role = "Admin"
 }

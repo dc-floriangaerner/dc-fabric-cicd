@@ -71,7 +71,9 @@ jobs:
 
       - name: Terraform Init
         working-directory: ${{ env.TF_WORKING_DIR }}
-        run: terraform init
+        run: |
+          terraform init \
+            -backend-config="key=fabric-cicd-${{ steps.env.outputs.environment }}.tfstate"
 
       - name: Terraform Validate
         working-directory: ${{ env.TF_WORKING_DIR }}

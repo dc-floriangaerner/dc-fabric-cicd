@@ -118,11 +118,21 @@ Edit the three files under `terraform/environments/`:
 
 ```bash
 cd terraform
-terraform init
+terraform init -backend-config="key=fabric-cicd-dev.tfstate"
 terraform apply -var-file=environments/dev.tfvars
 ```
 
-Repeat for `test.tfvars` and `prod.tfvars` as needed.
+Repeat for `test.tfvars` and `prod.tfvars`, using the matching state key:
+
+```bash
+# Test
+terraform init -reconfigure -backend-config="key=fabric-cicd-test.tfstate"
+terraform apply -var-file=environments/test.tfvars
+
+# Prod
+terraform init -reconfigure -backend-config="key=fabric-cicd-prod.tfstate"
+terraform apply -var-file=environments/prod.tfvars
+```
 
 After this, the workspace exists and the CI/CD pipeline can deploy items into it.
 
