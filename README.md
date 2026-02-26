@@ -13,42 +13,49 @@ The included `workspaces/Fabric Blueprint` content is a minimum sample so the pi
 
 1. Clone or fork this repository.
 2. Create a Service Principal in Microsoft Entra ID.
-3. Configure GitHub secrets:
-   - Required for deploy + CI: `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, `AZURE_TENANT_ID`
-   - Required for Terraform workflow: `ARM_SUBSCRIPTION_ID`
-4. Edit Terraform environment files:
+3. Capture required IDs/secrets from your Azure setup:
+   - `AZURE_CLIENT_ID` (Service Principal app/client ID)
+   - `AZURE_CLIENT_SECRET` (Service Principal secret value)
+   - `AZURE_TENANT_ID` (Entra tenant ID)
+   - `ARM_SUBSCRIPTION_ID` (Azure subscription ID that hosts Terraform state)
+4. Bootstrap Terraform backend state storage (one-time):
+   - Create Azure storage resources used by `terraform/main.tf` backend:
+     - `resource_group_name = "rg-fabric-cicd-tfstate"`
+     - `storage_account_name = "stsfabriccicdtfstate"`
+     - `container_name = "tfstate"`
+   - If you use different names, update `terraform/main.tf`.
+   - Grant the Service Principal `Storage Blob Data Contributor` on the storage account.
+5. Configure GitHub repository secrets:
+   - `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, `AZURE_TENANT_ID`
+   - `ARM_SUBSCRIPTION_ID`
+6. Create GitHub Environments named exactly: `dev`, `test`, `prod`.
+7. Edit Terraform environment files:
    - `terraform/environments/dev.tfvars`
    - `terraform/environments/test.tfvars`
    - `terraform/environments/prod.tfvars`
-5. In each tfvars file, set real values for:
+8. In each tfvars file, set real values for:
    - `workspace_name`
    - `capacity_id`
    - `entra_admin_group_object_id`
-6. Ensure workspace names in `workspaces/Fabric Blueprint/config.yml` match tfvars names for each environment.
-7. Replace sample GUIDs in `workspaces/Fabric Blueprint/parameter_templates/*.yml` with your real Dev IDs.
-8. Run local validation:
-   - `python -m scripts.check_unmapped_ids --workspaces_directory workspaces`
-   - `pytest tests/ -v`
-9. Run infrastructure:
+9. Ensure workspace names in `workspaces/Fabric Blueprint/config.yml` match tfvars names for each environment.
+10. Run infrastructure:
    - GitHub Actions -> `Terraform — Fabric Infrastructure` -> select `dev`, then `test`, then `prod`
-10. Merge a PR with `workspaces/**` changes to deploy automatically to Dev.
-11. Promote manually to Test/Prod:
+11. Merge a PR with `workspaces/**` changes to deploy automatically to Dev.
+12. Promote manually to Test/Prod:
    - GitHub Actions -> `Deploy to Microsoft Fabric` -> `test` or `prod`
 
-## What You Must Change First
+## First Deployment vs Later Changes
 
-If you only update these files correctly, you can start deploying quickly:
-
-- `terraform/environments/*.tfvars`
-  - Replace placeholder `capacity_id` values.
-  - Replace placeholder `entra_admin_group_object_id` values.
-  - Keep workspace names aligned with workspace configs.
-- `workspaces/Fabric Blueprint/config.yml`
-  - Verify `core.workspace.dev|test|prod` names are exactly the same as Terraform provisions.
-- `workspaces/Fabric Blueprint/parameter_templates/*.yml`
-  - Replace sample Dev GUIDs with IDs from your Dev workspace content.
-- GitHub repository secrets
-  - Add `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, `AZURE_TENANT_ID`, `ARM_SUBSCRIPTION_ID`.
+- First deployment path:
+  - Focus on Service Principal + GitHub secrets, Terraform state backend, tfvars values, and workspace name alignment.
+- Later (when you customize workspace content):
+  - Update `workspaces/Fabric Blueprint/parameter_templates/*.yml` with your real Dev IDs.
+  - Run local checks before PR:
+    - `python -m scripts.check_unmapped_ids --workspaces_directory workspaces`
+    - `pytest tests/ -v`
+- Detailed setup and content-mapping guidance:
+  - [wiki/Setup-Guide.md](wiki/Setup-Guide.md)
+  - [wiki/Workspace-Configuration.md](wiki/Workspace-Configuration.md)
 
 ## Current CI/CD Behavior
 
