@@ -1,4 +1,4 @@
-variable "workspace_name_fabric_blueprint" {
+variable "workspace_name" {
   type        = string
   description = "Display name of the Fabric Blueprint workspace for the target environment."
 }

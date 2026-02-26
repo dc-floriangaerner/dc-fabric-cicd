@@ -21,7 +21,7 @@ The included `workspaces/Fabric Blueprint` content is a minimum sample so the pi
    - `terraform/environments/test.tfvars`
    - `terraform/environments/prod.tfvars`
 5. In each tfvars file, set real values for:
-   - `workspace_name_fabric_blueprint`
+   - `workspace_name`
    - `capacity_id`
    - `entra_admin_group_object_id`
 6. Ensure workspace names in `workspaces/Fabric Blueprint/config.yml` match tfvars names for each environment.

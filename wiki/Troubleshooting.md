@@ -25,7 +25,7 @@ Symptoms:
 Checks:
 1. Confirm `terraform.yml` ran successfully for that environment.
 2. Compare names exactly:
-   - `terraform/environments/<env>.tfvars` -> `workspace_name_fabric_blueprint`
+   - `terraform/environments/<env>.tfvars` -> `workspace_name`
    - `workspaces/Fabric Blueprint/config.yml` -> `core.workspace.<env>`
 3. Verify Service Principal has access to that workspace.
 

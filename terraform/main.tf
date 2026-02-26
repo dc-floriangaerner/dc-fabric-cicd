@@ -24,7 +24,7 @@ provider "fabric" {}
 # ──────────────────────────────────────────────
 
 resource "fabric_workspace" "fabric_blueprint" {
-  display_name = var.workspace_name_fabric_blueprint
+  display_name = var.workspace_name
   capacity_id  = var.capacity_id
 }
 

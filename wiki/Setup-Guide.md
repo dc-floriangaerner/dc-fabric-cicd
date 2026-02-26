@@ -41,12 +41,12 @@ Edit all environment files:
 - `terraform/environments/prod.tfvars`
 
 Set real values for:
-- `workspace_name_fabric_blueprint`
+- `workspace_name`
 - `capacity_id`
 - `entra_admin_group_object_id`
 
 Important:
-- `workspace_name_fabric_blueprint` must match the workspace name in `workspaces/Fabric Blueprint/config.yml` for the same environment.
+- `workspace_name` must match the workspace name in `workspaces/Fabric Blueprint/config.yml` for the same environment.
 - Placeholder GUIDs like `00000000-0000-0000-0000-000000000000` must be replaced.
 
 ## Step 4: Configure GitHub Secrets
