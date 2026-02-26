@@ -207,43 +207,48 @@ class TestBuildDeploymentResultsJson:
 class TestPrintDeploymentSummary:
     """Test suite for print_deployment_summary function."""
 
-    def test_print_summary_all_success(self):
-        """Test printing summary with all successful deployments."""
+    @patch("scripts.fabric.reporting.logger")
+    def test_print_summary_all_success(self, mock_logger):
+        """Test summary logging content for successful deployments."""
         results = [
             DeploymentResult("WS1", "[D] WS1", True),
             DeploymentResult("WS2", "[D] WS2", True),
         ]
         summary = DeploymentSummary(environment="dev", duration=60.5, results=results)
 
-        # Function should execute without errors
         print_deployment_summary(summary)
-        # Verify summary properties are correct
-        assert summary.successful_count == 2
-        assert summary.failed_count == 0
 
-    def test_print_summary_with_failures(self):
-        """Test printing summary with some failures."""
+        info_messages = [call.args[0] for call in mock_logger.info.call_args_list]
+        error_messages = [call.args[0] for call in mock_logger.error.call_args_list]
+
+        assert any("DEPLOYMENT SUMMARY" in msg for msg in info_messages)
+        assert any("Environment: DEV" in msg for msg in info_messages)
+        assert any("Duration: 60.50 seconds" in msg for msg in info_messages)
+        assert any("[OK] SUCCESSFUL DEPLOYMENTS:" in msg for msg in info_messages)
+        assert any("[D] WS1" in msg for msg in info_messages)
+        assert any("[D] WS2" in msg for msg in info_messages)
+        assert not error_messages
+
+    @patch("scripts.fabric.reporting.logger")
+    def test_print_summary_with_failures(self, mock_logger):
+        """Test summary logging content for failed deployments."""
         results = [
             DeploymentResult("WS1", "[D] WS1", True),
             DeploymentResult("WS2", "[D] WS2", False, "API error"),
         ]
         summary = DeploymentSummary(environment="test", duration=45.3, results=results)
 
-        # Function should execute without errors
         print_deployment_summary(summary)
-        # Verify summary properties are correct
-        assert summary.successful_count == 1
-        assert summary.failed_count == 1
 
-    def test_print_summary_duration_formatting(self):
-        """Test that duration is formatted correctly."""
-        results = [DeploymentResult("WS1", "[D] WS1", True)]
-        summary = DeploymentSummary(environment="prod", duration=123.456, results=results)
+        info_messages = [call.args[0] for call in mock_logger.info.call_args_list]
+        error_messages = [call.args[0] for call in mock_logger.error.call_args_list]
 
-        # Function should execute without errors
-        print_deployment_summary(summary)
-        # Verify duration is stored correctly
-        assert summary.duration == 123.456
+        assert any("Environment: TEST" in msg for msg in info_messages)
+        assert any("Duration: 45.30 seconds" in msg for msg in info_messages)
+        assert any("[OK] SUCCESSFUL DEPLOYMENTS:" in msg for msg in info_messages)
+        assert any("[FAIL] FAILED DEPLOYMENTS:" in msg for msg in error_messages)
+        assert any("[D] WS2" in msg for msg in error_messages)
+        assert any("API error" in msg for msg in error_messages)
 
 
 class TestDeployAllWorkspaces:

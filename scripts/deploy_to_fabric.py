@@ -8,66 +8,30 @@ import json
 import os
 import sys
 import time
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 import yaml
-from azure.identity import ClientSecretCredential, DefaultAzureCredential
 from fabric_cicd import append_feature_flag, change_log_level, deploy_with_config  # type: ignore[import-untyped]
 
 # Import local modules using relative imports
-from .deployment_config import (
+from .common.logger import get_logger
+from .fabric.auth import CredentialType, create_azure_credential
+from .fabric.config import (
     CONFIG_FILE,
     ENV_ACTIONS_RUNNER_DEBUG,
-    ENV_AZURE_CLIENT_ID,
-    ENV_AZURE_CLIENT_SECRET,
-    ENV_AZURE_TENANT_ID,
-    ENV_GITHUB_ACTIONS,
     EXIT_FAILURE,
     EXIT_SUCCESS,
     RESULTS_FILENAME,
     SEPARATOR_LONG,
     SEPARATOR_SHORT,
     VALID_ENVIRONMENTS,
-    WIKI_SETUP_GUIDE_URL,
-    WIKI_TROUBLESHOOTING_URL,
 )
-from .logger import get_logger
+from .fabric.reporting import build_deployment_results_json, print_deployment_summary
+from .fabric.types import DeploymentResult, DeploymentSummary
 
 # Initialize logger
 logger = get_logger(__name__)
-
-
-@dataclass
-class DeploymentResult:
-    """Result of a single workspace deployment."""
-
-    workspace_folder: str
-    workspace_name: str
-    success: bool
-    error_message: str = ""
-
-
-@dataclass
-class DeploymentSummary:
-    """Summary of all workspace deployments."""
-
-    environment: str
-    duration: float
-    results: list[DeploymentResult]
-
-    @property
-    def total_workspaces(self) -> int:
-        return len(self.results)
-
-    @property
-    def successful_count(self) -> int:
-        return sum(1 for r in self.results if r.success)
-
-    @property
-    def failed_count(self) -> int:
-        return sum(1 for r in self.results if not r.success)
 
 
 def load_workspace_config(workspace_folder: str, workspaces_dir: str) -> dict[str, Any]:
@@ -117,10 +81,6 @@ def get_workspace_name_from_config(config: dict[str, Any], environment: str) -> 
         ) from None
 
 
-# Alias for backwards compatibility with tests
-get_workspace_name_for_environment = get_workspace_name_from_config
-
-
 def get_workspace_folders(workspaces_dir: str) -> list[str]:
     """Get all workspace folders from the workspaces directory.
 
@@ -154,7 +114,7 @@ def deploy_workspace(
     workspace_folder: str,
     workspaces_dir: str,
     environment: str,
-    token_credential: ClientSecretCredential | DefaultAzureCredential,
+    token_credential: CredentialType,
 ) -> DeploymentResult:
     """Deploy a single workspace using config.yml.
 
@@ -206,59 +166,6 @@ def deploy_workspace(
         )
 
 
-def create_azure_credential() -> ClientSecretCredential | DefaultAzureCredential:
-    """Create and return the appropriate Azure credential based on environment.
-
-    Raises:
-        ValueError: If running in GitHub Actions but Service Principal secrets are not configured.
-    """
-    client_id = os.getenv(ENV_AZURE_CLIENT_ID)
-    tenant_id = os.getenv(ENV_AZURE_TENANT_ID)
-    client_secret = os.getenv(ENV_AZURE_CLIENT_SECRET)
-
-    if client_id and tenant_id and client_secret:
-        logger.info("-> Using ClientSecretCredential for authentication")
-        return ClientSecretCredential(tenant_id=tenant_id, client_id=client_id, client_secret=client_secret)
-
-    # Detect partial configuration — some vars set but not all
-    provided = [v for v in [client_id, tenant_id, client_secret] if v]
-    missing_vars = []
-    if not client_id:
-        missing_vars.append(ENV_AZURE_CLIENT_ID)
-    if not tenant_id:
-        missing_vars.append(ENV_AZURE_TENANT_ID)
-    if not client_secret:
-        missing_vars.append(ENV_AZURE_CLIENT_SECRET)
-
-    is_ci = os.getenv(ENV_GITHUB_ACTIONS, "").lower() == "true"
-
-    if is_ci or provided:
-        # In GitHub Actions (or with partial creds): fail fast with actionable guidance
-        if provided:
-            hint = (
-                f"The following secrets are set but incomplete — missing: {', '.join(missing_vars)}. "
-                "All three must be configured together."
-            )
-        else:
-            hint = (
-                f"None of the required GitHub secrets are configured: "
-                f"{ENV_AZURE_CLIENT_ID}, {ENV_AZURE_TENANT_ID}, {ENV_AZURE_CLIENT_SECRET}."
-            )
-        raise ValueError(
-            f"{hint}\n"
-            "\n"
-            "  These secrets authenticate the deployment pipeline to Microsoft Fabric\n"
-            "  using a Service Principal (Entra ID App Registration).\n"
-            "\n"
-            f"  Setup instructions : {WIKI_SETUP_GUIDE_URL}\n"
-            f"  Troubleshooting    : {WIKI_TROUBLESHOOTING_URL}#clientsecretcredential-authentication-failed\n"
-        )
-
-    # Local development fallback — no CI env, no creds set
-    logger.info("-> Using DefaultAzureCredential for authentication (local development)")
-    return DefaultAzureCredential()
-
-
 def discover_workspace_folders(workspaces_directory: str) -> list[str]:
     """Discover and return all workspace folders to deploy.
 
@@ -280,80 +187,6 @@ def discover_workspace_folders(workspaces_directory: str) -> list[str]:
     return workspace_folders
 
 
-def build_deployment_results_json(summary: DeploymentSummary) -> dict[str, Any]:
-    """Build the deployment results dictionary for JSON output.
-
-    Args:
-        summary: Deployment summary object
-
-    Returns:
-        Dictionary containing deployment results for JSON serialization
-    """
-    workspaces_list: list[dict[str, Any]] = []
-
-    # Add all workspace results
-    for result in summary.results:
-        workspaces_list.append(
-            {
-                "name": result.workspace_folder,
-                "full_name": result.workspace_name,
-                "status": "success" if result.success else "failure",
-                "error": result.error_message,
-            }
-        )
-
-    # Sort workspaces by name for consistent output
-    workspaces_list.sort(key=lambda x: x["name"])
-
-    results_json = {
-        "environment": summary.environment,
-        "duration": summary.duration,
-        "total_workspaces": summary.total_workspaces,
-        "successful_count": summary.successful_count,
-        "failed_count": summary.failed_count,
-        "workspaces": workspaces_list,
-    }
-
-    return results_json
-
-
-def print_deployment_summary(summary: DeploymentSummary) -> None:
-    """Print comprehensive deployment summary to console.
-
-    Args:
-        summary: Deployment summary containing all results and metrics
-    """
-    logger.info(f"\n{SEPARATOR_LONG}")
-    logger.info("DEPLOYMENT SUMMARY")
-    logger.info(SEPARATOR_LONG)
-    logger.info(f"Environment: {summary.environment.upper()}")
-    logger.info(f"Duration: {summary.duration:.2f} seconds")
-    logger.info(f"Total workspaces: {summary.total_workspaces}")
-    logger.info(f"Successful: {summary.successful_count}")
-    logger.info(f"Failed: {summary.failed_count}")
-    logger.info(SEPARATOR_LONG)
-
-    # Report successful and failed deployments by iterating through results once
-    successful = []
-    failed = []
-    for result in summary.results:
-        if result.success:
-            successful.append(result.workspace_name)
-        else:
-            failed.append((result.workspace_name, result.error_message))
-
-    if successful:
-        logger.info("\n[OK] SUCCESSFUL DEPLOYMENTS:")
-        for full_name in successful:
-            logger.info(f"  [OK] {full_name}")
-
-    if failed:
-        logger.error("\n[FAIL] FAILED DEPLOYMENTS:")
-        for full_name, error in failed:
-            logger.error(f"  [FAIL] {full_name}")
-            logger.error(f"    Error: {error}")
-
-    logger.info(f"\n{SEPARATOR_LONG}")
 
 
 def validate_environment(environment: str) -> None:
@@ -375,7 +208,7 @@ def deploy_all_workspaces(
     workspace_folders: list[str],
     workspaces_directory: str,
     environment: str,
-    token_credential: ClientSecretCredential | DefaultAzureCredential,
+    token_credential: CredentialType,
 ) -> list[DeploymentResult]:
     """Deploy all specified workspaces and return results.
 
@@ -409,17 +242,10 @@ def deploy_all_workspaces(
     return results
 
 
-def main():
-    """Main deployment orchestration."""
-    # Enable experimental features for config-based deployment
-    append_feature_flag("enable_experimental_features")
-    append_feature_flag("enable_config_deploy")
-
-    # Parse arguments from GitHub Actions workflow
+def parse_cli_args() -> argparse.Namespace:
+    """Parse command-line arguments for workspace deployment."""
     parser = argparse.ArgumentParser(description="Deploy Fabric Workspaces - Auto-discovers all workspace folders")
-    parser.add_argument(
-        "--workspaces_directory", type=str, required=True, help="Root directory containing workspace folders"
-    )
+    parser.add_argument("--workspaces_directory", type=str, required=True, help="Root directory containing workspace folders")
     parser.add_argument(
         "--environment",
         type=str,
@@ -427,15 +253,21 @@ def main():
         choices=list(VALID_ENVIRONMENTS),
         help="Target environment (dev/test/prod)",
     )
+    return parser.parse_args()
 
-    args = parser.parse_args()
 
-    workspaces_directory = args.workspaces_directory
-    environment = args.environment
+def configure_runtime() -> None:
+    """Configure feature flags and runtime logging behavior."""
+    # Enable experimental features for config-based deployment
+    append_feature_flag("enable_experimental_features")
+    append_feature_flag("enable_config_deploy")
 
-    # Force unbuffered output for GitHub Actions logs
-    sys.stdout.reconfigure(line_buffering=True, write_through=True)
-    sys.stderr.reconfigure(line_buffering=True, write_through=True)
+    # Force unbuffered output for GitHub Actions logs.
+    # Use getattr for typing/runtime compatibility across stream implementations.
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if callable(reconfigure):
+            reconfigure(line_buffering=True, write_through=True)
 
     # Enable debugging if ACTIONS_RUNNER_DEBUG is set
     # Note: This only affects fabric_cicd library logging.
@@ -443,6 +275,9 @@ def main():
     if os.getenv(ENV_ACTIONS_RUNNER_DEBUG, "false").lower() == "true":
         change_log_level("DEBUG")
 
+
+def log_deployment_header(environment: str, workspaces_directory: str) -> None:
+    """Log deployment header metadata for run visibility."""
     logger.info(f"\n{SEPARATOR_LONG}")
     logger.info("FABRIC MULTI-WORKSPACE DEPLOYMENT")
     logger.info(SEPARATOR_LONG)
@@ -450,43 +285,50 @@ def main():
     logger.info(f"Workspaces directory: {workspaces_directory}")
     logger.info(f"{SEPARATOR_LONG}\n")
 
+
+def run_deployment_pipeline(
+    workspaces_directory: str, environment: str, token_credential: CredentialType
+) -> DeploymentSummary:
+    """Execute workspace discovery + deployment and return a summary."""
+    workspace_folders = discover_workspace_folders(workspaces_directory)
+
+    deployment_start_time = time.time()
+    results = deploy_all_workspaces(
+        workspace_folders=workspace_folders,
+        workspaces_directory=workspaces_directory,
+        environment=environment,
+        token_credential=token_credential,
+    )
+    deployment_duration = time.time() - deployment_start_time
+
+    return DeploymentSummary(environment=environment, duration=deployment_duration, results=results)
+
+
+def write_deployment_results(summary: DeploymentSummary) -> None:
+    """Write deployment result payload to disk for workflow summary scripts."""
+    deployment_results_json = build_deployment_results_json(summary)
+    with open(RESULTS_FILENAME, "w", encoding="utf-8") as f:
+        json.dump(deployment_results_json, f, indent=2)
+    logger.info(f"\n-> Deployment results written to {RESULTS_FILENAME}")
+
+
+def main():
+    """Main deployment orchestration."""
+    configure_runtime()
+    args = parse_cli_args()
+
+    workspaces_directory = args.workspaces_directory
+    environment = args.environment
+
+    log_deployment_header(environment, workspaces_directory)
+
     try:
-        # Validate environment
         validate_environment(environment)
-
-        # Authenticate
         token_credential = create_azure_credential()
-
-        # Auto-discover all workspace folders
-        workspace_folders = discover_workspace_folders(workspaces_directory)
-
-        # Track deployment duration
-        deployment_start_time = time.time()
-
-        # Deploy all workspaces
-        results = deploy_all_workspaces(
-            workspace_folders=workspace_folders,
-            workspaces_directory=workspaces_directory,
-            environment=environment,
-            token_credential=token_credential,
-        )
-
-        # Calculate deployment duration
-        deployment_duration = time.time() - deployment_start_time
-
-        # Create deployment summary
-        summary = DeploymentSummary(environment=environment, duration=deployment_duration, results=results)
-
-        # Write deployment results to JSON file for GitHub Actions summary
-        deployment_results_json = build_deployment_results_json(summary)
-        with open(RESULTS_FILENAME, "w", encoding="utf-8") as f:
-            json.dump(deployment_results_json, f, indent=2)
-        logger.info(f"\n-> Deployment results written to {RESULTS_FILENAME}")
-
-        # Print comprehensive deployment summary
+        summary = run_deployment_pipeline(workspaces_directory, environment, token_credential)
+        write_deployment_results(summary)
         print_deployment_summary(summary)
 
-        # Exit with appropriate code
         if summary.failed_count > 0:
             logger.warning(f"\nDeployment completed with {summary.failed_count} failure(s)\n")
             sys.exit(EXIT_FAILURE)

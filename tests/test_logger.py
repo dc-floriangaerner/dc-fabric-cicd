@@ -1,11 +1,11 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
-"""Tests for logger.py logging configuration."""
+"""Tests for scripts.common.logger logging configuration."""
 
 import logging
 
-from scripts.logger import get_logger, setup_logger
+from scripts.common.logger import get_logger, setup_logger
 
 
 class TestSetupLogger:

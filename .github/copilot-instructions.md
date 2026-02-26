@@ -28,7 +28,7 @@ python -m scripts.deploy_to_fabric --workspaces_directory workspaces --environme
 python -m json.tool "workspaces/Fabric Blueprint/1_Bronze/lakehouse_bronze.Lakehouse/lakehouse.metadata.json"
 
 # View deployment configuration
-cat scripts/deployment_config.py
+cat scripts/fabric/config.py
 ```
 
 ### Repository Structure
@@ -175,7 +175,7 @@ python -m scripts.deploy_to_fabric \
 python -m json.tool "workspaces/Fabric Blueprint/1_Bronze/lakehouse_bronze.Lakehouse/lakehouse.metadata.json"  # Validate JSON files
 
 # View deployment configuration
-cat scripts/deployment_config.py  # View centralized configuration constants
+cat scripts/fabric/config.py  # View centralized configuration constants
 ```
 
 ### Workflow Triggers
@@ -484,7 +484,7 @@ python -m scripts.deploy_to_fabric --help
 python -c "import yaml; yaml.safe_load(open('parameter.yml'))"
 
 # View deployment configuration constants
-python -c "from scripts.deployment_config import *; print(f'Valid environments: {VALID_ENVIRONMENTS}')"
+python -c "from scripts.fabric.config import VALID_ENVIRONMENTS; print(f'Valid environments: {VALID_ENVIRONMENTS}')"
 ```
 
 ## Coding Conventions

@@ -28,14 +28,14 @@ from pathlib import Path
 
 import yaml
 
-from .deployment_config import (
+from .common.logger import get_logger
+from .fabric.config import (
     CONFIG_FILE,
     EXIT_FAILURE,
     EXIT_SUCCESS,
     SEPARATOR_LONG,
     SEPARATOR_SHORT,
 )
-from .logger import get_logger
 
 logger = get_logger(__name__)
 
