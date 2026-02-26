@@ -20,28 +20,25 @@ The included `workspaces/Fabric Blueprint` content is a minimum sample so the pi
      - `container_name = "tfstate"`
    - If you use different names, update `terraform/main.tf`.
    - Grant the Service Principal `Storage Blob Data Contributor` on the storage account.
-4. Capture required IDs/secrets from your Azure setup:
+4. Capture required IDs/secrets from your Azure setup and configure GitHub repository secrets:
    - `AZURE_CLIENT_ID` (Service Principal app/client ID)
    - `AZURE_CLIENT_SECRET` (Service Principal secret value)
    - `AZURE_TENANT_ID` (Entra tenant ID)
    - `ARM_SUBSCRIPTION_ID` (Azure subscription ID that hosts Terraform state)
-5. Configure GitHub repository secrets:
-   - `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, `AZURE_TENANT_ID`
-   - `ARM_SUBSCRIPTION_ID`
-6. Create GitHub Environments named exactly: `dev`, `test`, `prod`.
-7. Edit Terraform environment files:
+5. Create GitHub Environments named exactly: `dev`, `test`, `prod`.
+6. Edit Terraform environment files:
    - `terraform/environments/dev.tfvars`
    - `terraform/environments/test.tfvars`
    - `terraform/environments/prod.tfvars`
-8. In each tfvars file, set real values for:
+7. In each tfvars file, set real values for:
    - `workspace_name`
    - `capacity_id`
    - `entra_admin_group_object_id`
-9. Ensure workspace names in `workspaces/Fabric Blueprint/config.yml` match tfvars names for each environment.
-10. Run infrastructure:
+8. Ensure workspace names in `workspaces/Fabric Blueprint/config.yml` match tfvars names for each environment.
+9. Run infrastructure:
    - GitHub Actions -> `Terraform — Fabric Infrastructure` -> select `dev`, then `test`, then `prod`
-11. Merge a PR with `workspaces/**` changes to deploy automatically to Dev.
-12. Promote manually to Test/Prod:
+10. Merge a PR with `workspaces/**` changes to deploy automatically to Dev.
+11. Promote manually to Test/Prod:
    - GitHub Actions -> `Deploy to Microsoft Fabric` -> `test` or `prod`
 
 ## First Deployment vs Later Changes
