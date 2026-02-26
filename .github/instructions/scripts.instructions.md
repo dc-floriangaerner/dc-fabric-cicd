@@ -23,30 +23,18 @@ Scripts in the `scripts/` directory are organized as a Python package:
 - **Logging**: Use centralized logger from scripts.logger module: `logger = get_logger(__name__)`
 - **Docstrings**: Include for all public functions with Args and Returns sections
 
-### Code Quality with Ruff
+### Code Quality
 
-All Python code must pass Ruff linting and formatting checks. The CI workflow enforces these rules.
+All Python code should pass tests and keep type hints accurate.
 
 **Run before committing:**
 ```bash
-# Check linting issues
-ruff check scripts/
+# Run tests
+pytest tests/ -v
 
-# Auto-fix linting issues
-ruff check scripts/ --fix
-
-# Check formatting
-ruff format --check scripts/
-
-# Auto-format code
-ruff format scripts/
+# Type-check scripts
+mypy scripts/
 ```
-
-**Configuration:**
-- Ruff settings in `pyproject.toml`
-- Line length: 120 characters
-- Rules: pycodestyle (E/W), Pyflakes (F), isort (I), pyupgrade (UP), flake8-bugbear (B)
-- CI runs both `ruff check` and `ruff format --check` on PRs
 
 ### Error Handling Pattern
 
