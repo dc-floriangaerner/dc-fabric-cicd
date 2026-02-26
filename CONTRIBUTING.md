@@ -68,10 +68,8 @@ This project follows standard open-source collaboration practices:
    - Keep commits focused and atomic
 
 4. **Test Locally**
-   - Run `ruff check scripts/` (linting)
-   - Run `ruff format scripts/` (formatting)
+   - Run `mypy scripts/` (type checking)
    - Run `pytest tests/` (tests)
-   - Run `pre-commit run --all-files` (all hooks)
 
 5. **Create Pull Request**
    - Push branch: `git push -u origin feature/42-add-platinum-lakehouse`
@@ -93,7 +91,6 @@ This project follows standard open-source collaboration practices:
 - Follow PEP 8 conventions
 - Use type hints for function arguments and return values
 - Line length: 120 characters max
-- Use Ruff for linting and formatting
 
 **Example:**
 ```python
@@ -273,10 +270,9 @@ pytest tests/test_deployment_config.py
 
 ### Before Submitting
 
-- [ ] Code passes all linting checks (`ruff check scripts/`)
-- [ ] Code is properly formatted (`ruff format scripts/`)
+- [ ] Code quality checks pass
+- [ ] Type checks pass (`mypy scripts/`)
 - [ ] All tests pass (`pytest tests/`)
-- [ ] Pre-commit hooks pass (`pre-commit run --all-files`)
 - [ ] Documentation is updated
 - [ ] Commit messages are clear and reference the issue
 

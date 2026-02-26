@@ -46,9 +46,6 @@ coverage.xml
 htmlcov/
 .pytest_cache/
 
-# Linting and Formatting
-.ruff_cache/
-
 # Deployment artifacts
 deployment-results.json
 

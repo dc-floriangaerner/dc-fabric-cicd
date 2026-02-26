@@ -25,7 +25,7 @@ permissions:
 
 jobs:
   test:
-    name: Run Tests and Linting
+    name: Run Tests and Validation
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -54,18 +54,6 @@ jobs:
           echo "::endgroup::"
         env:
           GITHUB_ACTIONS: 'true'
-
-      - name: Run Ruff linting
-        run: |
-          echo "::group::Ruff Check"
-          ruff check scripts/ --output-format=github
-          echo "::endgroup::"
-
-      - name: Run Ruff formatting check
-        run: |
-          echo "::group::Ruff Format Check"
-          ruff format --check scripts/
-          echo "::endgroup::"
 
       - name: Run pytest with coverage
         run: |

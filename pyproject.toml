@@ -24,11 +24,9 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-    "ruff>=0.8.0",
     "pytest>=8.0.0",
     "pytest-cov>=5.0.0",
     "pytest-mock>=3.14.0",
-    "pre-commit>=4.0.0",
     "mypy>=1.14.0",
     "types-PyYAML>=6.0.0",
     "mkdocs>=1.6.0",
@@ -38,57 +36,6 @@ dev = [
 [build-system]
 requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
-
-[tool.ruff]
-# Enable line length of 120 characters (Black-compatible)
-line-length = 120
-target-version = "py311"
-
-# Exclude common directories
-exclude = [
-    ".git",
-    ".ruff_cache",
-    ".venv",
-    "__pycache__",
-    "build",
-    "dist",
-    "*.egg-info",
-    "workspaces",
-    "docs/exploration/**",
-    "*.ipynb",
-]
-
-[tool.ruff.lint]
-# Enable rule sets: pycodestyle errors (E), Pyflakes (F), warnings (W),
-# isort (I), pyupgrade (UP), flake8-bugbear (B), simplify (SIM), Ruff-specific (RUF)
-# flake8-print (T20) - prevent print statements
-select = ["E", "F", "W", "I", "UP", "B", "SIM", "RUF", "T20"]
-
-# No rules ignored - all print statements replaced with logging in Phase 2
-ignore = []
-
-# Allow autofix for all enabled rules
-fixable = ["ALL"]
-unfixable = []
-
-# Allow unused variables when underscore-prefixed
-dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
-
-[tool.ruff.lint.isort]
-known-first-party = ["scripts"]
-
-[tool.ruff.format]
-# Use double quotes for strings (Black-compatible)
-quote-style = "double"
-
-# Indent with spaces
-indent-style = "space"
-
-# Respect magic trailing comma
-skip-magic-trailing-comma = false
-
-# Auto-detect line ending
-line-ending = "auto"
 
 [tool.pytest.ini_options]
 minversion = "8.0"

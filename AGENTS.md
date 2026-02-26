@@ -39,8 +39,7 @@ Keep infrastructure provisioning, workspace item deployment, and documentation f
 ## High-Value Local Commands
 - Install runtime deps: `pip install -r requirements.txt`
 - Install dev deps: `pip install -r requirements-dev.txt`
-- Lint scripts: `ruff check scripts/`
-- Format scripts: `ruff format scripts/`
+- Type-check scripts: `mypy scripts/`
 - Run tests: `pytest tests/ -v`
 - Scan unmapped GUIDs: `python -m scripts.check_unmapped_ids --workspaces_directory workspaces`
 - Local deploy (dev): `python -m scripts.deploy_to_fabric --workspaces_directory workspaces --environment dev`
@@ -55,7 +54,7 @@ Keep infrastructure provisioning, workspace item deployment, and documentation f
   - Manual/reusable: `dev|test|prod`.
 - `ci.yml` (PR to `main`)
   - Runs on changes in `scripts/**`, `tests/**`, `workspaces/**`, dependency files, and workflow file itself.
-  - Executes unmapped-ID scan, Ruff, pytest, coverage.
+  - Executes unmapped-ID scan, pytest, coverage.
 - `sync-wiki.yml`
   - Auto: push to `main` with changes under `wiki/**`.
 
@@ -63,8 +62,8 @@ Keep infrastructure provisioning, workspace item deployment, and documentation f
 
 ### If editing `scripts/**`
 - Follow existing typing and logging style.
-- Use logger utilities (`scripts/logger.py`), avoid `print` (Ruff `T20` enforced).
-- Run: Ruff + pytest before finalizing.
+- Use logger utilities (`scripts/logger.py`), avoid `print`.
+- Run: pytest before finalizing.
 
 ### If editing `workspaces/**`
 - Keep each item in `<name>.<ItemType>/` structure.
@@ -84,7 +83,7 @@ Keep infrastructure provisioning, workspace item deployment, and documentation f
 ## Definition of Done (Before Hand-off)
 - Scope-limited changes only; no unrelated file churn.
 - Required checks for changed area executed locally (at minimum):
-  - `scripts/**`: Ruff + pytest.
+  - `scripts/**`: pytest.
   - `workspaces/**`: unmapped-ID scan.
   - `terraform/**`: logical consistency across tf files and env tfvars.
 - No secrets introduced.
