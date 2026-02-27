@@ -21,7 +21,6 @@ Use `README.md` for fast setup, then use these pages for details.
 ## What This Repository Is Not
 
 - Not a full Fabric solution architecture.
-- Not a catalog of planned features.
 - Not a generic deployment engine for every CI platform.
 
 ## Required Knowledge
