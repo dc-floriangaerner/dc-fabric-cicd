@@ -20,6 +20,20 @@ This page describes exactly what is implemented in current workflows.
 5. Deploy job runs scanner, then deploy script.
 6. Team promotes manually to `test` and `prod` via workflow dispatch.
 
+## Config-Based Deployment Flow
+
+The deploy workflow does not contain workspace-specific publish logic.
+Instead, `scripts/deploy_to_fabric.py` discovers workspace folders and delegates deployment to `fabric-cicd` using each workspace's `config.yml`.
+
+Per workspace, the runtime flow is:
+1. Discover folder only if `workspaces/<name>/config.yml` exists.
+2. Load `config.yml` and resolve target workspace from `core.workspace.<env>`.
+3. Read parameterization file from `core.parameter` (for example `parameter.yml`, including any `extend` templates).
+4. Call `deploy_with_config(...)` to publish/unpublish according to the config contract.
+
+Practical implication:
+- To change deployment behavior, update workspace config files (`config.yml`, `parameter.yml`, templates), not pipeline code in most cases.
+
 ## `terraform.yml` Behavior
 
 - Auto on push to `main` with `terraform/**` changes (targets `dev`).
@@ -54,6 +68,8 @@ Pipeline order:
 Important:
 - Deploy script only deploys into existing workspaces.
 - Workspace discovery is based on folders containing `config.yml`.
+- Parameterization rule syntax is defined by `fabric-cicd`:
+  [https://microsoft.github.io/fabric-cicd/latest/how_to/parameterization/](https://microsoft.github.io/fabric-cicd/latest/how_to/parameterization/)
 
 ## Environment Promotion
 

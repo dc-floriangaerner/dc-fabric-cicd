@@ -51,6 +51,18 @@ extend:
 
 This means rule content is stored in template files, while `parameter.yml` acts as a root aggregator.
 
+## What Config-Based Deployment Means
+
+This repository uses `fabric-cicd` config deployment (`deploy_with_config`) via `scripts/deploy_to_fabric.py`.
+
+At runtime, for each discovered workspace folder:
+1. `config.yml` is loaded.
+2. Environment workspace name is resolved from `core.workspace.<dev|test|prod>`.
+3. `core.parameter` points to `parameter.yml`.
+4. `fabric-cicd` publishes items from `core.repository_directory` and applies parameterization rules.
+
+In short: deployment behavior is driven by workspace config files, not hardcoded script logic per workspace.
+
 ## What Must Be Parameterized
 
 The scanner `scripts/check_unmapped_ids.py` checks for uncovered GUIDs in:
@@ -85,6 +97,13 @@ Useful optional fields:
 - `item_name`
 - `file_path`
 - `description`
+
+Official rule reference:
+- [fabric-cicd parameterization rule format](https://microsoft.github.io/fabric-cicd/latest/how_to/parameterization/)
+
+Repository usage examples:
+- `workspaces/Fabric Blueprint/parameter_templates/nb_parameters.yml`
+- `workspaces/Fabric Blueprint/parameter_templates/cp_parameters.yml`
 
 ## Validation Commands
 
