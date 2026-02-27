@@ -10,6 +10,7 @@ Use `README.md` for fast setup, then use these pages for details.
 3. [Deployment Workflow](Deployment-Workflow): exact behavior of GitHub workflows.
 4. [Troubleshooting](Troubleshooting): fix common failure modes.
 5. [FAQ](FAQ): concise answers to recurring questions.
+6. [Fabric CI/CD Options Comparison](Fabric-CICD-Options-Comparison): deep comparison of Fabric CI/CD tooling choices.
 
 ## What This Repository Is
 

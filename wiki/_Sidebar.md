@@ -9,6 +9,7 @@
 
 ## Deployment
 - [Deployment Workflow](Deployment-Workflow)
+- [Fabric CI/CD Options Comparison](Fabric-CICD-Options-Comparison)
 
 ## Support
 - [Troubleshooting](Troubleshooting)
