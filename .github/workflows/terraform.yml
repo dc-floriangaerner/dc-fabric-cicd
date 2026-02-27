@@ -38,6 +38,7 @@ env:
   TF_VERSION: '1.9.0'
   TF_WORKING_DIR: './terraform'
   TARGET_ENV: ${{ github.event_name == 'push' && 'dev' || inputs.environment }}
+  TF_STATE_KEY: ${{ github.repository }}/${{ github.event_name == 'push' && 'dev' || inputs.environment }}.tfstate
 
 jobs:
   terraform:
@@ -73,7 +74,7 @@ jobs:
         run: |
           terraform init \
             -input=false \
-            -backend-config="key=fabric-cicd-${{ env.TARGET_ENV }}.tfstate"
+            -backend-config="key=${{ env.TF_STATE_KEY }}"
 
       - name: Terraform Validate
         working-directory: ${{ env.TF_WORKING_DIR }}

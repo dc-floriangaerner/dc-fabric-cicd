@@ -27,7 +27,7 @@ This page describes exactly what is implemented in current workflows.
 - Reusable workflow call from `fabric-deploy.yml`.
 
 Steps:
-1. `terraform init` with environment-specific state key.
+1. `terraform init` with environment-specific state key (`<org>/<repo>/<env>.tfstate`).
 2. `terraform validate`
 3. `terraform plan`
 4. `terraform apply`

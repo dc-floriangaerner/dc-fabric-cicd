@@ -45,9 +45,9 @@ Set real values for:
 - `capacity_id`
 - `entra_admin_group_object_id`
 
-`entra_admin_group_object_id` means: the Object ID of the Entra ID group that Terraform assigns as `Admin` on the workspace.
+`entra_admin_group_object_id` means: the Object ID of the Entra ID security group intended to be assigned as `Admin` on the workspace (this can differ by environment).
 Where to find it:
-- Entra admin center -> Groups -> your admin group -> `Object ID`
+- Entra admin center -> Groups -> your stage-specific security group -> `Object ID`
 
 Important:
 - `workspace_name` must match the workspace name in `workspaces/Fabric Blueprint/config.yml` for the same environment.
@@ -84,11 +84,15 @@ You can also run Terraform locally:
 
 ```bash
 cd terraform
-terraform init -backend-config="key=fabric-cicd-dev.tfstate"
+terraform init -backend-config="key=<org>/<repo>/dev.tfstate"
 terraform apply -var-file=environments/dev.tfvars
 ```
 
-Use the matching state key for `test` and `prod`.
+Use the matching state key for `test` and `prod` with the same pattern:
+- `<org>/<repo>/test.tfstate`
+- `<org>/<repo>/prod.tfstate`
+
+Do not reuse the same key across different repositories/projects when they share the same backend storage container.
 
 ## Step 7: Configure Content Mapping
 

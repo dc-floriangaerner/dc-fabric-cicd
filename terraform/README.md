@@ -114,7 +114,7 @@ az login --service-principal `
   --tenant $AZURE_TENANT_ID
 
 # Initialize — pass the environment-specific state key
-terraform init -backend-config="key=fabric-cicd-dev.tfstate"
+terraform init -backend-config="key=<org>/<repo>/dev.tfstate"
 
 # Apply
 terraform apply -var-file=environments/dev.tfvars
@@ -123,11 +123,11 @@ terraform apply -var-file=environments/dev.tfvars
 Use the matching key for other environments:
 ```powershell
 # Test
-terraform init -reconfigure -backend-config="key=fabric-cicd-test.tfstate"
+terraform init -reconfigure -backend-config="key=<org>/<repo>/test.tfstate"
 terraform apply -var-file=environments/test.tfvars
 
 # Prod
-terraform init -reconfigure -backend-config="key=fabric-cicd-prod.tfstate"
+terraform init -reconfigure -backend-config="key=<org>/<repo>/prod.tfstate"
 terraform apply -var-file=environments/prod.tfvars
 ```
 
@@ -152,11 +152,12 @@ Each environment uses an **isolated state file** so that dev, test, and prod wor
 
 | Environment | State key |
 |---|---|
-| dev | `fabric-cicd-dev.tfstate` |
-| test | `fabric-cicd-test.tfstate` |
-| prod | `fabric-cicd-prod.tfstate` |
+| dev | `<org>/<repo>/dev.tfstate` |
+| test | `<org>/<repo>/test.tfstate` |
+| prod | `<org>/<repo>/prod.tfstate` |
 
 The `key` is **not** hardcoded in `main.tf` — it is supplied at `terraform init` time via `-backend-config="key=..."` (done automatically by the workflow).
+Using `<org>/<repo>/<env>.tfstate` prevents state collisions when multiple repositories share the same Azure Blob backend container.
 
 ---
 

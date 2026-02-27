@@ -12,8 +12,8 @@ terraform {
     resource_group_name  = "rg-fabric-cicd-tfstate"
     storage_account_name = "stsfabriccicdtfstate"
     container_name       = "tfstate"
-    # key is supplied at init time via -backend-config so each environment
-    # gets its own isolated state file (dev / test / prod)
+    # key is supplied at init time via -backend-config so each repository and
+    # environment gets its own isolated state file (for example <org>/<repo>/dev.tfstate)
   }
 }
 

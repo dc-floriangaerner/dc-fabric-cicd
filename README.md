@@ -20,6 +20,8 @@ The included `workspaces/Fabric Blueprint` content is a minimum sample so the pi
      - `container_name = "tfstate"`
    - If you use different names, update `terraform/main.tf`.
    - Grant the Service Principal `Storage Blob Data Contributor` on the storage account.
+   - Use a unique backend state `key` per repository and environment.
+     Recommended pattern: `<org>/<repo>/<env>.tfstate` (example: `contoso/dc-fabric-cicd/dev.tfstate`).
 4. Capture required IDs/secrets from your Azure setup and configure GitHub repository secrets:
    - `AZURE_CLIENT_ID` (Service Principal app/client ID)
    - `AZURE_CLIENT_SECRET` (Service Principal secret value)
