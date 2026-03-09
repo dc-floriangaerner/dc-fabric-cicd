@@ -1,0 +1,39 @@
+# SemanticModel Parameterization Templates
+# 1) Binds semantic models to environment-specific Fabric connections.
+# 2) Replaces DirectLake OneLake path GUIDs in SemanticModel expressions.tmdl files.
+
+# semantic_model_binding:
+    # Default connection for all models not explicitly listed
+    # default:
+    #     connection_id:
+    #         dev: ae07840b-de77-40e5-b6dd-c899bddf945e
+            # test: <test-connection-guid>
+            # prod: <prod-connection-guid>
+            # OR use _ALL_ for same connection across environments
+            # _ALL_: <connection_guid>
+
+    # Explicit bindings override default
+    # models:
+    #     - semantic_model_name: "<semantic_model_name>"
+    #       connection_id:
+    #           PPE: <PPE-connection_guid>
+    #           PROD: <PROD-connection_guid>
+
+    #     - semantic_model_name: ["<semantic_model_name1>", "<semantic_model_name2>", ...]
+    #       connection_id:
+    #           _ALL_: <connection_guid>
+
+find_replace:
+    # Replace hardcoded OneLake workspace GUID in DirectLake expressions with target workspace ID
+    - find_value: "d4c89580-b3fa-46f1-9ee8-d3ef5b384c91"
+      replace_value:
+          _ALL_: "$workspace.$id"
+      item_type: "SemanticModel"
+      file_path: "**/*.SemanticModel/definition/expressions.tmdl"
+
+    # Replace hardcoded gold Lakehouse GUID in DirectLake expressions with target lakehouse ID
+    - find_value: "2e1d42e0-ec3a-471f-8e36-546552c09df5"
+      replace_value:
+          _ALL_: "$items.Lakehouse.lakehouse_gold.$id"
+      item_type: "SemanticModel"
+      file_path: "**/*.SemanticModel/definition/expressions.tmdl"

@@ -99,6 +99,9 @@ Do not reuse the same key across different repositories/projects when they share
 Update content mapping rules with your real Dev IDs:
 - `workspaces/Fabric Blueprint/parameter_templates/nb_parameters.yml`
 - `workspaces/Fabric Blueprint/parameter_templates/cp_parameters.yml`
+- `workspaces/Fabric Blueprint/parameter_templates/pl_parameters.yml`
+- `workspaces/Fabric Blueprint/parameter_templates/lh_parameters.yml`
+- `workspaces/Fabric Blueprint/parameter_templates/sm_parameters.yml`
 
 `workspaces/Fabric Blueprint/parameter.yml` already extends these templates.
 

@@ -10,7 +10,9 @@ Scanned contexts:
     - # META  "default_lakehouse_sql_endpoint": "GUID"
     - # META containing known_lakehouses GUID references
   JSON item content files (e.g. copyjob-content.json, pipeline-content.json)
-    - "workspaceId", "artifactId", "lakehouseId", "connectionId" field values
+    - "workspaceId", "artifactId", "itemId", "lakehouseId", "connectionId" field values
+  SemanticModel TMDL files
+    - OneLake URL GUIDs in DirectLake expressions (workspaceId/itemId path segments)
 
 Usage:
     python -m scripts.check_unmapped_ids --workspaces_directory workspaces
@@ -58,6 +60,7 @@ NOTEBOOK_KNOWN_LAKEHOUSES_KEY = "known_lakehouses"
 JSON_SENSITIVE_FIELDS = {
     "workspaceId",
     "artifactId",
+    "itemId",
     "lakehouseId",
     "connectionId",
 }
@@ -65,12 +68,20 @@ JSON_SENSITIVE_FIELDS = {
 # Files that never require parameterisation - skip entirely
 SKIP_FILENAMES = {
     "alm.settings.json",
-    "shortcuts.metadata.json",
     "stage_config.json",
 }
 
 # Suffixes that are metadata, not deployable content
 SKIP_SUFFIXES = {".metadata.json"}
+INCLUDED_METADATA_FILENAMES = {"shortcuts.metadata.json"}
+
+# OneLake DirectLake source URL:
+# https://onelake.dfs.fabric.microsoft.com/<workspace-guid>/<item-guid>
+SEMANTIC_MODEL_ONELAKE_URL_RE = re.compile(
+    r"https://onelake\.dfs\.fabric\.microsoft\.com/"
+    r"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})/"
+    r"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})"
+)
 
 
 # ---------------------------------------------------------------------------
@@ -360,6 +371,30 @@ def _extract_from_json(file_path: Path) -> list[tuple[str, str, str]]:
     return results
 
 
+def _extract_from_semantic_model_tmdl(file_path: Path) -> list[tuple[str, str, str]]:
+    """Yield OneLake path GUIDs from SemanticModel TMDL files.
+
+    This intentionally targets GUIDs embedded in OneLake URLs only, which are
+    environment-specific for DirectLake sources. It avoids generic GUID scans so
+    metadata IDs (for example lineage tags) are not falsely reported.
+    """
+    results: list[tuple[str, str, str]] = []
+    try:
+        lines = file_path.read_text(encoding="utf-8").splitlines()
+    except Exception:
+        return results
+
+    for line in lines:
+        for match in SEMANTIC_MODEL_ONELAKE_URL_RE.finditer(line):
+            workspace_guid = match.group(1)
+            item_guid = match.group(2)
+            context = line.strip()
+            results.append(("onelake_workspace_id", workspace_guid, context))
+            results.append(("onelake_item_id", item_guid, context))
+
+    return results
+
+
 # ---------------------------------------------------------------------------
 # Workspace scanner
 # ---------------------------------------------------------------------------
@@ -379,7 +414,10 @@ def scan_workspace(workspace_folder: str, workspaces_dir: Path, repo_root: Path)
             continue
         if file_path.name in SKIP_FILENAMES:
             continue
-        if any(file_path.name.endswith(s) for s in SKIP_SUFFIXES):
+        if (
+            any(file_path.name.endswith(s) for s in SKIP_SUFFIXES)
+            and file_path.name not in INCLUDED_METADATA_FILENAMES
+        ):
             continue
 
         item_type = item_type_from_path(file_path)
@@ -391,6 +429,8 @@ def scan_workspace(workspace_folder: str, workspaces_dir: Path, repo_root: Path)
             guid_entries = _extract_from_notebook(file_path)
         elif file_path.suffix == ".json":
             guid_entries = _extract_from_json(file_path)
+        elif item_type == "SemanticModel" and file_path.suffix == ".tmdl":
+            guid_entries = _extract_from_semantic_model_tmdl(file_path)
         else:
             continue
 

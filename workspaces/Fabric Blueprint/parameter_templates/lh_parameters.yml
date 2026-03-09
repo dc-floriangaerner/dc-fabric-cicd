@@ -1,0 +1,15 @@
+# Lakehouse Shortcut Parameterization Templates
+# Replaces hardcoded workspace and source lakehouse IDs in shortcut definitions.
+
+find_replace:
+    # Replace hardcoded workspace ID in OneLake shortcut targets
+    - find_value: "00000000-0000-0000-0000-000000000000"
+      replace_value:
+          _ALL_: "$workspace.id"
+      item_type: "Lakehouse"
+      
+    # Replace hardcoded source lakehouse ID (bronze) in OneLake shortcut targets
+    - find_value: "b892bcb4-b1d3-a9e0-4a9e-fac33bb0b654"
+      replace_value:
+          _ALL_: "$items.Lakehouse.lakehouse_bronze.$id"
+      item_type: "Lakehouse"

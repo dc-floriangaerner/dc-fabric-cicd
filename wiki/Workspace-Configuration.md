@@ -47,6 +47,9 @@ Current sample:
 extend:
   - "./parameter_templates/nb_parameters.yml"
   - "./parameter_templates/cp_parameters.yml"
+  - "./parameter_templates/pl_parameters.yml"
+  - "./parameter_templates/lh_parameters.yml"
+  - "./parameter_templates/sm_parameters.yml"
 ```
 
 This means rule content is stored in template files, while `parameter.yml` acts as a root aggregator.
@@ -74,8 +77,15 @@ The scanner `scripts/check_unmapped_ids.py` checks for uncovered GUIDs in:
 - JSON content fields:
   - `workspaceId`
   - `artifactId`
+  - `itemId`
   - `lakehouseId`
   - `connectionId`
+- SemanticModel TMDL files:
+  - OneLake URL GUIDs in DirectLake expressions (`https://onelake.dfs.fabric.microsoft.com/<workspace-guid>/<item-guid>`)
+
+Notes:
+- `shortcuts.metadata.json` is included in scanning.
+- `alm.settings.json` and `stage_config.json` remain excluded.
 
 If a GUID is found without matching find/replace coverage, CI fails.
 
@@ -104,6 +114,9 @@ Official rule reference:
 Repository usage examples:
 - `workspaces/Fabric Blueprint/parameter_templates/nb_parameters.yml`
 - `workspaces/Fabric Blueprint/parameter_templates/cp_parameters.yml`
+- `workspaces/Fabric Blueprint/parameter_templates/pl_parameters.yml`
+- `workspaces/Fabric Blueprint/parameter_templates/lh_parameters.yml`
+- `workspaces/Fabric Blueprint/parameter_templates/sm_parameters.yml`
 
 ## Validation Commands
 

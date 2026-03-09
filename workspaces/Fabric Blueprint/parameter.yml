@@ -6,3 +6,6 @@
 extend:
     - "./parameter_templates/nb_parameters.yml"
     - "./parameter_templates/cp_parameters.yml"
+    - "./parameter_templates/pl_parameters.yml"
+    - "./parameter_templates/lh_parameters.yml"
+    - "./parameter_templates/sm_parameters.yml"
