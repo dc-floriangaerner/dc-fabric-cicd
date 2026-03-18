@@ -6,18 +6,18 @@ branch_patterns:
   - "bugfix/**"
 
 workspace_name_template: "[{branch_prefix}] {workspace_folder} ({branch_slug}-{hash8})"
-capacity_id: "7A9FEE65-41E4-4272-81EC-EA5366B73EB4" #00000000-0000-0000-0000-000000000000
+capacity_id: "00000000-0000-0000-0000-000000000000"
 
 git:
   provider_type: "GitHub"
   repository:
-    owner: "dc-floriangaerner" # your-github-owner
+    owner: "your-github-owner"
     name: "dc-fabric-cicd"
-  connection_name: "GitHub-DC" #github-default
+  connection_name: "github-default"
   # connection_id: "00000000-0000-0000-0000-000000000000"
 
 permissions:
-  - principal_id: "e9acbe03-d883-4ff6-85c7-fd786e6f8dbb" #<entra_admin_group_object_id>
+  - principal_id: "<entra_admin_group_object_id>"
     role: "Admin"
 
 cleanup:
