@@ -117,8 +117,9 @@ class FeatureWorkspaceManager:
             raise ValueError(f"Workspace '{display_name}' did not return a valid id")
         return workspace_id
 
-    def create_workspace(self, display_name: str, capacity_name: str) -> None:
-        self.cli.run_command(f"create {self._workspace_path(display_name)} -P capacityName={capacity_name}")
+    def create_workspace(self, display_name: str, capacity_id: str) -> dict[str, Any]:
+        payload = {"displayName": display_name, "capacityId": capacity_id}
+        return self.cli.run_json(["api", "-X", "post", "workspaces", "-i", json.dumps(payload)])
 
     def resolve_workspace_id(
         self,
