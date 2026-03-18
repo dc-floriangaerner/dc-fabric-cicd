@@ -7,6 +7,7 @@ import hashlib
 import json
 import re
 import sys
+import time
 from dataclasses import dataclass
 from fnmatch import fnmatchcase
 from pathlib import Path
@@ -22,6 +23,8 @@ logger = get_logger(__name__)
 
 FEATURE_CONFIG_FILE = "feature-workspaces.yml"
 DEFAULT_BRANCH_SLUG_MAX_LENGTH = 40
+WORKSPACE_LOOKUP_RETRIES = 6
+WORKSPACE_LOOKUP_DELAY_SECONDS = 2.0
 
 
 @dataclass(frozen=True)
@@ -138,6 +141,34 @@ class FeatureWorkspaceManager:
     def create_workspace(self, display_name: str, capacity_id: str) -> dict[str, Any]:
         payload = {"displayName": display_name, "capacityId": capacity_id}
         return self.cli.run_json(["api", "-X", "post", "workspaces", "-i", json.dumps(payload)])
+
+    def resolve_workspace_id(
+        self,
+        display_name: str,
+        *,
+        created_workspace: dict[str, Any] | None = None,
+        retries: int = WORKSPACE_LOOKUP_RETRIES,
+        delay_seconds: float = WORKSPACE_LOOKUP_DELAY_SECONDS,
+    ) -> str:
+        """Resolve a workspace id from create response data or by polling the workspace list."""
+        if created_workspace:
+            workspace_id = created_workspace.get("id")
+            if isinstance(workspace_id, str) and workspace_id.strip():
+                return workspace_id.strip()
+
+        last_error: ValueError | None = None
+        attempts = max(1, retries)
+        for attempt in range(attempts):
+            try:
+                return self.get_workspace_id(display_name)
+            except ValueError as exc:
+                last_error = exc
+                if attempt == attempts - 1:
+                    break
+                time.sleep(delay_seconds)
+
+        assert last_error is not None
+        raise last_error
 
     def delete_workspace(self, workspace_id: str) -> None:
         self.cli.run(["api", "-X", "delete", f"workspaces/{workspace_id}"])
@@ -418,6 +449,7 @@ def create_feature_workspaces(
             branch_ref=branch_name,
             template=feature_config.workspace_name_template,
         )
+        created_workspace: dict[str, Any] | None = None
         logger.info(SEPARATOR_SHORT)
         logger.info("Workspace folder: %s", target.workspace_folder)
         logger.info("Feature workspace: %s", identity.display_name)
@@ -426,9 +458,9 @@ def create_feature_workspaces(
             logger.info("-> Workspace already exists, skipping create.")
         else:
             logger.info("-> Creating workspace on capacity %s", feature_config.capacity_id)
-            manager.create_workspace(identity.display_name, feature_config.capacity_id)
+            created_workspace = manager.create_workspace(identity.display_name, feature_config.capacity_id)
 
-        workspace_id = manager.get_workspace_id(identity.display_name)
+        workspace_id = manager.resolve_workspace_id(identity.display_name, created_workspace=created_workspace)
 
         for permission in feature_config.permissions:
             logger.info("-> Applying %s role to %s", permission.role, permission.principal_id)

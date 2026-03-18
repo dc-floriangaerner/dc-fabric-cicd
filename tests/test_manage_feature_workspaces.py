@@ -236,11 +236,49 @@ def test_feature_workspace_manager_raises_when_workspace_is_missing() -> None:
         manager.get_workspace_id("[F] Fabric Blueprint (feature-test-deployment-a8b7db56)")
 
 
+def test_feature_workspace_manager_resolve_workspace_id_uses_create_response_id() -> None:
+    cli = Mock(spec=FabCli)
+    manager = FeatureWorkspaceManager(cli=cli)
+
+    workspace_id = manager.resolve_workspace_id(
+        "[F] Fabric Blueprint (feature-test-deployment-a8b7db56)",
+        created_workspace={"id": "44444444-4444-4444-4444-444444444444"},
+    )
+
+    assert workspace_id == "44444444-4444-4444-4444-444444444444"
+    cli.run_json.assert_not_called()
+
+
+def test_feature_workspace_manager_resolve_workspace_id_retries_lookup() -> None:
+    cli = Mock(spec=FabCli)
+    cli.run_json.side_effect = [
+        {"value": []},
+        {
+            "value": [
+                {
+                    "id": "44444444-4444-4444-4444-444444444444",
+                    "displayName": "[F] Fabric Blueprint (feature-test-deployment-a8b7db56)",
+                }
+            ]
+        },
+    ]
+    manager = FeatureWorkspaceManager(cli=cli)
+
+    workspace_id = manager.resolve_workspace_id(
+        "[F] Fabric Blueprint (feature-test-deployment-a8b7db56)",
+        retries=2,
+        delay_seconds=0,
+    )
+
+    assert workspace_id == "44444444-4444-4444-4444-444444444444"
+
+
 def test_create_feature_workspaces_constructs_expected_calls() -> None:
     manager = Mock(spec=FeatureWorkspaceManager)
     manager.resolve_connection_id.return_value = "33333333-3333-3333-3333-333333333333"
     manager.workspace_exists.return_value = False
-    manager.get_workspace_id.return_value = "44444444-4444-4444-4444-444444444444"
+    manager.create_workspace.return_value = {"id": "44444444-4444-4444-4444-444444444444"}
+    manager.resolve_workspace_id.return_value = "44444444-4444-4444-4444-444444444444"
     manager.initialize_workspace_from_git.return_value = {
         "requiredAction": "UpdateFromGit",
         "workspaceHead": "workspace-head",
@@ -263,7 +301,7 @@ def test_create_feature_workspaces_is_idempotent_when_workspace_exists() -> None
     manager = Mock(spec=FeatureWorkspaceManager)
     manager.resolve_connection_id.return_value = "33333333-3333-3333-3333-333333333333"
     manager.workspace_exists.return_value = True
-    manager.get_workspace_id.return_value = "44444444-4444-4444-4444-444444444444"
+    manager.resolve_workspace_id.return_value = "44444444-4444-4444-4444-444444444444"
     manager.initialize_workspace_from_git.return_value = {"requiredAction": "None"}
     targets = [Mock(workspace_folder="Fabric Blueprint", git_directory="workspaces/Fabric Blueprint")]
 
@@ -278,7 +316,7 @@ def test_create_feature_workspaces_applies_permissions_by_workspace_id() -> None
     manager = Mock(spec=FeatureWorkspaceManager)
     manager.resolve_connection_id.return_value = "33333333-3333-3333-3333-333333333333"
     manager.workspace_exists.return_value = True
-    manager.get_workspace_id.return_value = "44444444-4444-4444-4444-444444444444"
+    manager.resolve_workspace_id.return_value = "44444444-4444-4444-4444-444444444444"
     manager.initialize_workspace_from_git.return_value = {"requiredAction": "None"}
     targets = [Mock(workspace_folder="Fabric Blueprint", git_directory="workspaces/Fabric Blueprint")]
 
@@ -294,6 +332,29 @@ def test_create_feature_workspaces_applies_permissions_by_workspace_id() -> None
         "44444444-4444-4444-4444-444444444444",
         "22222222-2222-2222-2222-222222222222",
         "Admin",
+    )
+
+
+def test_create_feature_workspaces_uses_create_response_when_workspace_is_new() -> None:
+    manager = Mock(spec=FeatureWorkspaceManager)
+    manager.resolve_connection_id.return_value = "33333333-3333-3333-3333-333333333333"
+    manager.workspace_exists.return_value = False
+    manager.create_workspace.return_value = {"id": "44444444-4444-4444-4444-444444444444"}
+    manager.resolve_workspace_id.return_value = "44444444-4444-4444-4444-444444444444"
+    manager.initialize_workspace_from_git.return_value = {"requiredAction": "None"}
+    targets = [Mock(workspace_folder="Fabric Blueprint", git_directory="workspaces/Fabric Blueprint")]
+    identity = build_feature_workspace_identity(
+        workspace_folder="Fabric Blueprint",
+        branch_ref="feature/new-thing",
+        template="[{branch_prefix}] {workspace_folder} ({branch_slug}-{hash8})",
+    )
+
+    exit_code = create_feature_workspaces(manager, _sample_feature_config(), targets, "feature/new-thing")
+
+    assert exit_code == 0
+    manager.resolve_workspace_id.assert_called_once_with(
+        identity.display_name,
+        created_workspace={"id": "44444444-4444-4444-4444-444444444444"},
     )
 
 
