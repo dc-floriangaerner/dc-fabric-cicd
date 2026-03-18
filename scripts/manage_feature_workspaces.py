@@ -25,6 +25,10 @@ FEATURE_CONFIG_FILE = "feature-workspaces.yml"
 DEFAULT_BRANCH_SLUG_MAX_LENGTH = 40
 WORKSPACE_LOOKUP_RETRIES = 6
 WORKSPACE_LOOKUP_DELAY_SECONDS = 2.0
+GIT_CONNECTION_RETRIES = 5
+GIT_CONNECTION_DELAY_SECONDS = 2.0
+UPDATE_OPERATION_RETRIES = 10
+UPDATE_OPERATION_DELAY_SECONDS = 2.0
 
 
 @dataclass(frozen=True)
@@ -97,65 +101,33 @@ class FeatureWorkspaceManager:
     def __init__(self, cli: FabCli | None = None):
         self.cli = cli or FabCli()
 
-    def list_workspaces(self) -> list[dict[str, Any]]:
-        """Return all accessible workspaces through the Fabric REST API."""
-        workspaces: list[dict[str, Any]] = []
-        continuation_token: str | None = None
-
-        while True:
-            endpoint = "workspaces"
-            if continuation_token:
-                endpoint = f"{endpoint}?continuationToken={continuation_token}"
-            args = ["api", "-X", "get", endpoint]
-            response = self.cli.run_json(args)
-            page_items = response.get("value", [])
-            if not isinstance(page_items, list):
-                raise ValueError("Fabric workspaces API returned an invalid payload for 'value'")
-            workspaces.extend(item for item in page_items if isinstance(item, dict))
-
-            raw_continuation = response.get("continuationToken")
-            continuation_token = str(raw_continuation).strip() if raw_continuation else None
-            if not continuation_token:
-                return workspaces
-
-    def find_workspace(self, display_name: str) -> dict[str, Any] | None:
-        """Find a workspace by exact display name."""
-        for workspace in self.list_workspaces():
-            if workspace.get("displayName") == display_name:
-                return workspace
-        return None
+    @staticmethod
+    def _workspace_path(display_name: str) -> str:
+        escaped = display_name.replace("/", "\\/")
+        return f"'{escaped}.Workspace'"
 
     def workspace_exists(self, display_name: str) -> bool:
-        return self.find_workspace(display_name) is not None
+        result = self.cli.run_command(f"exists {self._workspace_path(display_name)}")
+        return result.stdout.replace("*", "").strip().lower() == "true"
 
     def get_workspace_id(self, display_name: str) -> str:
-        workspace = self.find_workspace(display_name)
-        if workspace is None:
-            raise ValueError(f"Workspace '{display_name}' was not found via the Fabric workspaces API")
-
-        workspace_id = workspace.get("id")
-        if not isinstance(workspace_id, str) or not workspace_id.strip():
+        result = self.cli.run_command(f"get {self._workspace_path(display_name)} -q id")
+        workspace_id = result.stdout.strip().strip('"')
+        if not workspace_id:
             raise ValueError(f"Workspace '{display_name}' did not return a valid id")
-        return workspace_id.strip()
+        return workspace_id
 
-    def create_workspace(self, display_name: str, capacity_id: str) -> dict[str, Any]:
-        payload = {"displayName": display_name, "capacityId": capacity_id}
-        return self.cli.run_json(["api", "-X", "post", "workspaces", "-i", json.dumps(payload)])
+    def create_workspace(self, display_name: str, capacity_name: str) -> None:
+        self.cli.run_command(f"create {self._workspace_path(display_name)} -P capacityName={capacity_name}")
 
     def resolve_workspace_id(
         self,
         display_name: str,
         *,
-        created_workspace: dict[str, Any] | None = None,
         retries: int = WORKSPACE_LOOKUP_RETRIES,
         delay_seconds: float = WORKSPACE_LOOKUP_DELAY_SECONDS,
     ) -> str:
-        """Resolve a workspace id from create response data or by polling the workspace list."""
-        if created_workspace:
-            workspace_id = created_workspace.get("id")
-            if isinstance(workspace_id, str) and workspace_id.strip():
-                return workspace_id.strip()
-
+        """Resolve a workspace id by polling the CLI path lookup."""
         last_error: ValueError | None = None
         attempts = max(1, retries)
         for attempt in range(attempts):
@@ -170,15 +142,56 @@ class FeatureWorkspaceManager:
         assert last_error is not None
         raise last_error
 
-    def delete_workspace(self, workspace_id: str) -> None:
-        self.cli.run(["api", "-X", "delete", f"workspaces/{workspace_id}"])
+    def delete_workspace(self, display_name: str) -> None:
+        self.cli.run_command(f"rm {self._workspace_path(display_name)} -f")
 
-    def set_workspace_permission(self, workspace_ref: str, principal_id: str, role: str) -> None:
-        self.cli.run(["acl", "set", f"{workspace_ref}.Workspace", "-I", principal_id, "-R", role.lower(), "-f"])
+    def set_workspace_permission(self, display_name: str, principal_id: str, role: str) -> None:
+        self.cli.run_command(
+            f"acl set {self._workspace_path(display_name)} -I {principal_id} -R {role.lower()} -f"
+        )
 
     def resolve_connection_id(self, connection_name: str) -> str:
-        result = self.cli.run(["get", f".connections/{connection_name}.Connection", "-q", "id"])
+        result = self.cli.run_command(f"get .connections/{connection_name}.Connection -q id")
         return result.stdout.strip().strip('"')
+
+    def wait_for_git_connection(
+        self,
+        workspace_id: str,
+        *,
+        retries: int = GIT_CONNECTION_RETRIES,
+        delay_seconds: float = GIT_CONNECTION_DELAY_SECONDS,
+    ) -> dict[str, Any] | None:
+        for attempt in range(max(1, retries)):
+            git_connection = self.get_git_connection(workspace_id)
+            state = git_connection.get("gitConnectionState") if isinstance(git_connection, dict) else None
+            if state != "NotConnected":
+                return git_connection
+            if attempt < retries - 1:
+                time.sleep(delay_seconds)
+        return None
+
+    def poll_operation_status(
+        self,
+        operation_id: str,
+        *,
+        retries: int = UPDATE_OPERATION_RETRIES,
+        delay_seconds: float = UPDATE_OPERATION_DELAY_SECONDS,
+    ) -> dict[str, Any] | None:
+        for attempt in range(max(1, retries)):
+            response = self.cli.run_api_text(f"operations/{operation_id}")
+            if not isinstance(response, dict):
+                return None
+
+            status = response.get("status")
+            if status in {"NotStarted", "Running"}:
+                if attempt < retries - 1:
+                    time.sleep(delay_seconds)
+                    continue
+                return None
+            if status == "Succeeded":
+                return response
+            return None
+        return None
 
     def connect_workspace_to_git(
         self,
@@ -201,18 +214,17 @@ class FeatureWorkspaceManager:
                 "connectionId": connection_id,
             },
         }
-        self.cli.run(["api", "-X", "post", f"workspaces/{workspace_id}/git/connect", "-i", json.dumps(payload)])
+        self.cli.run_api(f"workspaces/{workspace_id}/git/connect", method="post", input_data=payload)
+        return self.wait_for_git_connection(workspace_id)
 
     def initialize_workspace_from_git(self, workspace_id: str) -> dict[str, Any]:
-        payload = {"initializationStrategy": "PreferRemote"}
-        return self.cli.run_json(
-            ["api", "-X", "post", f"workspaces/{workspace_id}/git/initializeConnection", "-i", json.dumps(payload)]
-        )
+        response = self.cli.run_api(f"workspaces/{workspace_id}/git/initializeConnection", method="post")
+        payload = response["text"]
+        return payload if isinstance(payload, dict) else {}
 
-    def update_workspace_from_git(self, workspace_id: str, initialize_response: dict[str, Any]) -> dict[str, Any]:
+    def update_workspace_from_git(self, workspace_id: str, remote_commit_hash: str) -> dict[str, Any] | None:
         payload = {
-            "workspaceHead": initialize_response.get("workspaceHead"),
-            "remoteCommitHash": initialize_response["remoteCommitHash"],
+            "remoteCommitHash": remote_commit_hash,
             "conflictResolution": {
                 "conflictResolutionType": "Workspace",
                 "conflictResolutionPolicy": "PreferRemote",
@@ -221,17 +233,28 @@ class FeatureWorkspaceManager:
                 "allowOverrideItems": True,
             },
         }
-        return self.cli.run_json(
-            ["api", "-X", "post", f"workspaces/{workspace_id}/git/updateFromGit", "-i", json.dumps(payload)]
+        response = self.cli.run_api(
+            f"workspaces/{workspace_id}/git/updateFromGit",
+            method="post",
+            input_data=payload,
+            show_headers=True,
         )
+        if response["status_code"] == 202:
+            operation_id = response["headers"].get("x-ms-operation-id")
+            if not operation_id:
+                return None
+            return self.poll_operation_status(operation_id)
+        payload_response = response["text"]
+        return payload_response if isinstance(payload_response, dict) else None
 
     def get_git_connection(self, workspace_id: str) -> dict[str, Any] | None:
-        result = self.cli.run(["api", "-X", "get", f"workspaces/{workspace_id}/git/connection"], check=False)
-        if result.returncode != 0:
+        try:
+            response = self.cli.run_api_text(f"workspaces/{workspace_id}/git/connection")
+        except FabCliError:
             return None
-        if not result.stdout:
+        if response is None:
             return {}
-        return json.loads(result.stdout)
+        return response if isinstance(response, dict) else {}
 
 
 def load_yaml_file(path: Path) -> dict[str, Any]:
@@ -449,7 +472,6 @@ def create_feature_workspaces(
             branch_ref=branch_name,
             template=feature_config.workspace_name_template,
         )
-        created_workspace: dict[str, Any] | None = None
         logger.info(SEPARATOR_SHORT)
         logger.info("Workspace folder: %s", target.workspace_folder)
         logger.info("Feature workspace: %s", identity.display_name)
@@ -458,27 +480,30 @@ def create_feature_workspaces(
             logger.info("-> Workspace already exists, skipping create.")
         else:
             logger.info("-> Creating workspace on capacity %s", feature_config.capacity_id)
-            created_workspace = manager.create_workspace(identity.display_name, feature_config.capacity_id)
+            manager.create_workspace(identity.display_name, feature_config.capacity_id)
 
-        workspace_id = manager.resolve_workspace_id(identity.display_name, created_workspace=created_workspace)
+        workspace_id = manager.resolve_workspace_id(identity.display_name)
 
         for permission in feature_config.permissions:
             logger.info("-> Applying %s role to %s", permission.role, permission.principal_id)
-            manager.set_workspace_permission(workspace_id, permission.principal_id, permission.role)
+            manager.set_workspace_permission(identity.display_name, permission.principal_id, permission.role)
         logger.info("-> Connecting workspace to Git branch '%s' in '%s'", identity.branch_name, identity.git_directory)
-        manager.connect_workspace_to_git(
+        git_connection = manager.connect_workspace_to_git(
             workspace_id=workspace_id,
             git_config=feature_config.git,
             branch_name=identity.branch_name,
             directory_name=identity.git_directory,
             connection_id=connection_id,
         )
+        if not git_connection:
+            raise ValueError(f"Workspace '{identity.display_name}' could not establish a Git connection")
 
         logger.info("-> Initializing workspace from Git")
         initialize_response = manager.initialize_workspace_from_git(workspace_id)
-        if initialize_response.get("requiredAction") == "UpdateFromGit":
+        remote_commit_hash = initialize_response.get("remoteCommitHash")
+        if initialize_response.get("requiredAction") != "None" and remote_commit_hash:
             logger.info("-> Completing initial Git pull into workspace")
-            manager.update_workspace_from_git(workspace_id, initialize_response)
+            manager.update_workspace_from_git(workspace_id, remote_commit_hash)
 
     return EXIT_SUCCESS
 
@@ -513,8 +538,7 @@ def delete_feature_workspaces(
             continue
 
         logger.info("-> Deleting workspace")
-        workspace_id = manager.get_workspace_id(identity.display_name)
-        manager.delete_workspace(workspace_id)
+        manager.delete_workspace(identity.display_name)
 
     return EXIT_SUCCESS
 

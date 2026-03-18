@@ -31,6 +31,12 @@ class FabCli:
 
     def run(self, args: list[str], *, check: bool = True) -> FabCommandResult:
         command = ["fab", *args]
+        return self._execute(command, check=check)
+
+    def run_command(self, command: str, *, check: bool = True) -> FabCommandResult:
+        return self._execute(["fab", "-c", command], check=check)
+
+    def _execute(self, command: list[str], *, check: bool = True) -> FabCommandResult:
         completed = subprocess.run(
             command,
             capture_output=True,
@@ -50,6 +56,33 @@ class FabCli:
 
     def run_json(self, args: list[str], *, check: bool = True) -> Any:
         result = self.run(args, check=check)
+        return self._parse_json_result(result)
+
+    def run_json_command(self, command: str, *, check: bool = True) -> Any:
+        result = self.run_command(command, check=check)
+        return self._parse_json_result(result)
+
+    def run_api(self, endpoint: str, *, method: str = "get", input_data: Any | None = None, show_headers: bool = False) -> dict[str, Any]:
+        command = f"api -X {method} {endpoint}"
+        if input_data is not None:
+            command += f" -i {json.dumps(input_data)}"
+        if show_headers:
+            command += " --show_headers"
+        payload = self.run_json_command(command)
+        return self._normalize_api_response(payload, command=command)
+
+    def run_api_text(
+        self,
+        endpoint: str,
+        *,
+        method: str = "get",
+        input_data: Any | None = None,
+        show_headers: bool = False,
+    ) -> Any:
+        response = self.run_api(endpoint, method=method, input_data=input_data, show_headers=show_headers)
+        return response["text"]
+
+    def _parse_json_result(self, result: FabCommandResult) -> Any:
         if not result.stdout:
             return {}
         try:
@@ -59,3 +92,27 @@ class FabCli:
                 f"Fabric CLI command did not return JSON: {' '.join(result.command)}\n{result.stdout}",
                 result,
             ) from exc
+
+    def _normalize_api_response(self, payload: Any, *, command: str) -> dict[str, Any]:
+        if isinstance(payload, dict) and (
+            "status_code" in payload or "text" in payload or "headers" in payload
+        ):
+            status_code = payload.get("status_code")
+            if isinstance(status_code, int) and status_code >= 400:
+                raise FabCliError(
+                    f"Fabric CLI API command failed: fab -c {command}\n{json.dumps(payload)}",
+                    FabCommandResult(command=["fab", "-c", command], returncode=1, stdout=json.dumps(payload), stderr=""),
+                )
+            return {
+                "status_code": status_code,
+                "text": payload.get("text"),
+                "headers": payload.get("headers", {}),
+                "raw": payload,
+            }
+
+        return {
+            "status_code": None,
+            "text": payload,
+            "headers": {},
+            "raw": payload,
+        }

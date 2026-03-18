@@ -8,7 +8,6 @@ from unittest.mock import Mock
 
 import pytest
 
-from scripts.fabric.fab_cli import FabCli
 from scripts.manage_feature_workspaces import (
     FeatureCleanupConfig,
     FeatureGitConfig,
@@ -37,7 +36,7 @@ branch_patterns:
   - "feature/**"
   - "bugfix/**"
 workspace_name_template: "[{branch_prefix}] {workspace_folder} ({branch_slug}-{hash8})"
-capacity_id: "11111111-1111-1111-1111-111111111111"
+capacity_id: "MyCapacity"
 git:
   provider_type: "GitHub"
   repository:
@@ -76,7 +75,7 @@ def _sample_feature_config() -> FeatureWorkspaceConfig:
     return FeatureWorkspaceConfig(
         branch_patterns=["feature/**", "bugfix/**"],
         workspace_name_template="[{branch_prefix}] {workspace_folder} ({branch_slug}-{hash8})",
-        capacity_id="11111111-1111-1111-1111-111111111111",
+        capacity_id="MyCapacity",
         git=FeatureGitConfig(
             provider_type="GitHub",
             repository_owner="contoso",
@@ -92,7 +91,7 @@ def _sample_feature_config_with_permissions() -> FeatureWorkspaceConfig:
     return FeatureWorkspaceConfig(
         branch_patterns=["feature/**", "bugfix/**"],
         workspace_name_template="[{branch_prefix}] {workspace_folder} ({branch_slug}-{hash8})",
-        capacity_id="11111111-1111-1111-1111-111111111111",
+        capacity_id="MyCapacity",
         git=FeatureGitConfig(
             provider_type="GitHub",
             repository_owner="contoso",
@@ -114,7 +113,7 @@ def test_load_feature_workspace_config(feature_config_file: Path) -> None:
 
     assert config.branch_patterns == ["feature/**", "bugfix/**"]
     assert config.workspace_name_template == "[{branch_prefix}] {workspace_folder} ({branch_slug}-{hash8})"
-    assert config.capacity_id == "11111111-1111-1111-1111-111111111111"
+    assert config.capacity_id == "MyCapacity"
     assert config.git.repository_owner == "contoso"
     assert config.git.repository_name == "dc-fabric-cicd"
     assert config.git.connection_name == "shared-github"
@@ -201,100 +200,37 @@ def test_resolve_branch_name_for_pull_request_closed_event(tmp_path: Path) -> No
     assert branch == "bugfix/fix-a-thing"
 
 
-def test_feature_workspace_manager_finds_workspace_by_display_name_across_pages() -> None:
-    cli = Mock(spec=FabCli)
-    cli.run_json.side_effect = [
-        {
-            "value": [{"id": "11111111-1111-1111-1111-111111111111", "displayName": "Other Workspace"}],
-            "continuationToken": "next-page",
-        },
-        {
-            "value": [
-                {
-                    "id": "44444444-4444-4444-4444-444444444444",
-                    "displayName": "[F] Fabric Blueprint (feature-test-deployment-a8b7db56)",
-                }
-            ]
-        },
-    ]
-    manager = FeatureWorkspaceManager(cli=cli)
-
-    workspace = manager.find_workspace("[F] Fabric Blueprint (feature-test-deployment-a8b7db56)")
-
-    assert workspace == {
-        "id": "44444444-4444-4444-4444-444444444444",
-        "displayName": "[F] Fabric Blueprint (feature-test-deployment-a8b7db56)",
-    }
-
-
-def test_feature_workspace_manager_raises_when_workspace_is_missing() -> None:
-    cli = Mock(spec=FabCli)
-    cli.run_json.return_value = {"value": []}
-    manager = FeatureWorkspaceManager(cli=cli)
-
-    with pytest.raises(ValueError, match="was not found via the Fabric workspaces API"):
-        manager.get_workspace_id("[F] Fabric Blueprint (feature-test-deployment-a8b7db56)")
-
-
-def test_feature_workspace_manager_resolve_workspace_id_uses_create_response_id() -> None:
-    cli = Mock(spec=FabCli)
-    manager = FeatureWorkspaceManager(cli=cli)
-
-    workspace_id = manager.resolve_workspace_id(
-        "[F] Fabric Blueprint (feature-test-deployment-a8b7db56)",
-        created_workspace={"id": "44444444-4444-4444-4444-444444444444"},
-    )
-
-    assert workspace_id == "44444444-4444-4444-4444-444444444444"
-    cli.run_json.assert_not_called()
-
-
-def test_feature_workspace_manager_resolve_workspace_id_retries_lookup() -> None:
-    cli = Mock(spec=FabCli)
-    cli.run_json.side_effect = [
-        {"value": []},
-        {
-            "value": [
-                {
-                    "id": "44444444-4444-4444-4444-444444444444",
-                    "displayName": "[F] Fabric Blueprint (feature-test-deployment-a8b7db56)",
-                }
-            ]
-        },
-    ]
-    manager = FeatureWorkspaceManager(cli=cli)
-
-    workspace_id = manager.resolve_workspace_id(
-        "[F] Fabric Blueprint (feature-test-deployment-a8b7db56)",
-        retries=2,
-        delay_seconds=0,
-    )
-
-    assert workspace_id == "44444444-4444-4444-4444-444444444444"
+def test_workspace_path_quotes_and_escapes_slashes() -> None:
+    assert FeatureWorkspaceManager._workspace_path("Folder/Sub Name") == "'Folder\\/Sub Name.Workspace'"
 
 
 def test_create_feature_workspaces_constructs_expected_calls() -> None:
     manager = Mock(spec=FeatureWorkspaceManager)
     manager.resolve_connection_id.return_value = "33333333-3333-3333-3333-333333333333"
     manager.workspace_exists.return_value = False
-    manager.create_workspace.return_value = {"id": "44444444-4444-4444-4444-444444444444"}
     manager.resolve_workspace_id.return_value = "44444444-4444-4444-4444-444444444444"
+    manager.connect_workspace_to_git.return_value = {"gitConnectionState": "ConnectedAndInitialized"}
     manager.initialize_workspace_from_git.return_value = {
         "requiredAction": "UpdateFromGit",
-        "workspaceHead": "workspace-head",
         "remoteCommitHash": "remote-hash",
     }
     targets = [Mock(workspace_folder="Fabric Blueprint", git_directory="workspaces/Fabric Blueprint")]
+    identity = build_feature_workspace_identity(
+        workspace_folder="Fabric Blueprint",
+        branch_ref="feature/new-thing",
+        template="[{branch_prefix}] {workspace_folder} ({branch_slug}-{hash8})",
+    )
 
     exit_code = create_feature_workspaces(manager, _sample_feature_config(), targets, "feature/new-thing")
 
     assert exit_code == 0
-    manager.create_workspace.assert_called_once()
+    manager.create_workspace.assert_called_once_with(identity.display_name, "MyCapacity")
+    manager.resolve_workspace_id.assert_called_once_with(identity.display_name)
     manager.connect_workspace_to_git.assert_called_once()
     _, kwargs = manager.connect_workspace_to_git.call_args
     assert kwargs["branch_name"] == "feature/new-thing"
     assert kwargs["directory_name"] == "workspaces/Fabric Blueprint"
-    manager.update_workspace_from_git.assert_called_once()
+    manager.update_workspace_from_git.assert_called_once_with("44444444-4444-4444-4444-444444444444", "remote-hash")
 
 
 def test_create_feature_workspaces_is_idempotent_when_workspace_exists() -> None:
@@ -302,45 +238,7 @@ def test_create_feature_workspaces_is_idempotent_when_workspace_exists() -> None
     manager.resolve_connection_id.return_value = "33333333-3333-3333-3333-333333333333"
     manager.workspace_exists.return_value = True
     manager.resolve_workspace_id.return_value = "44444444-4444-4444-4444-444444444444"
-    manager.initialize_workspace_from_git.return_value = {"requiredAction": "None"}
-    targets = [Mock(workspace_folder="Fabric Blueprint", git_directory="workspaces/Fabric Blueprint")]
-
-    exit_code = create_feature_workspaces(manager, _sample_feature_config(), targets, "feature/new-thing")
-
-    assert exit_code == 0
-    manager.create_workspace.assert_not_called()
-    manager.connect_workspace_to_git.assert_called_once()
-
-
-def test_create_feature_workspaces_applies_permissions_by_workspace_id() -> None:
-    manager = Mock(spec=FeatureWorkspaceManager)
-    manager.resolve_connection_id.return_value = "33333333-3333-3333-3333-333333333333"
-    manager.workspace_exists.return_value = True
-    manager.resolve_workspace_id.return_value = "44444444-4444-4444-4444-444444444444"
-    manager.initialize_workspace_from_git.return_value = {"requiredAction": "None"}
-    targets = [Mock(workspace_folder="Fabric Blueprint", git_directory="workspaces/Fabric Blueprint")]
-
-    exit_code = create_feature_workspaces(
-        manager,
-        _sample_feature_config_with_permissions(),
-        targets,
-        "feature/new-thing",
-    )
-
-    assert exit_code == 0
-    manager.set_workspace_permission.assert_called_once_with(
-        "44444444-4444-4444-4444-444444444444",
-        "22222222-2222-2222-2222-222222222222",
-        "Admin",
-    )
-
-
-def test_create_feature_workspaces_uses_create_response_when_workspace_is_new() -> None:
-    manager = Mock(spec=FeatureWorkspaceManager)
-    manager.resolve_connection_id.return_value = "33333333-3333-3333-3333-333333333333"
-    manager.workspace_exists.return_value = False
-    manager.create_workspace.return_value = {"id": "44444444-4444-4444-4444-444444444444"}
-    manager.resolve_workspace_id.return_value = "44444444-4444-4444-4444-444444444444"
+    manager.connect_workspace_to_git.return_value = {"gitConnectionState": "ConnectedAndInitialized"}
     manager.initialize_workspace_from_git.return_value = {"requiredAction": "None"}
     targets = [Mock(workspace_folder="Fabric Blueprint", git_directory="workspaces/Fabric Blueprint")]
     identity = build_feature_workspace_identity(
@@ -352,10 +250,49 @@ def test_create_feature_workspaces_uses_create_response_when_workspace_is_new() 
     exit_code = create_feature_workspaces(manager, _sample_feature_config(), targets, "feature/new-thing")
 
     assert exit_code == 0
-    manager.resolve_workspace_id.assert_called_once_with(
-        identity.display_name,
-        created_workspace={"id": "44444444-4444-4444-4444-444444444444"},
+    manager.create_workspace.assert_not_called()
+    manager.resolve_workspace_id.assert_called_once_with(identity.display_name)
+
+
+def test_create_feature_workspaces_applies_permissions_by_workspace_path() -> None:
+    manager = Mock(spec=FeatureWorkspaceManager)
+    manager.resolve_connection_id.return_value = "33333333-3333-3333-3333-333333333333"
+    manager.workspace_exists.return_value = True
+    manager.resolve_workspace_id.return_value = "44444444-4444-4444-4444-444444444444"
+    manager.connect_workspace_to_git.return_value = {"gitConnectionState": "ConnectedAndInitialized"}
+    manager.initialize_workspace_from_git.return_value = {"requiredAction": "None"}
+    targets = [Mock(workspace_folder="Fabric Blueprint", git_directory="workspaces/Fabric Blueprint")]
+    identity = build_feature_workspace_identity(
+        workspace_folder="Fabric Blueprint",
+        branch_ref="feature/new-thing",
+        template="[{branch_prefix}] {workspace_folder} ({branch_slug}-{hash8})",
     )
+
+    exit_code = create_feature_workspaces(
+        manager,
+        _sample_feature_config_with_permissions(),
+        targets,
+        "feature/new-thing",
+    )
+
+    assert exit_code == 0
+    manager.set_workspace_permission.assert_called_once_with(
+        identity.display_name,
+        "22222222-2222-2222-2222-222222222222",
+        "Admin",
+    )
+
+
+def test_create_feature_workspaces_raises_when_git_connection_never_establishes() -> None:
+    manager = Mock(spec=FeatureWorkspaceManager)
+    manager.resolve_connection_id.return_value = "33333333-3333-3333-3333-333333333333"
+    manager.workspace_exists.return_value = True
+    manager.resolve_workspace_id.return_value = "44444444-4444-4444-4444-444444444444"
+    manager.connect_workspace_to_git.return_value = None
+    targets = [Mock(workspace_folder="Fabric Blueprint", git_directory="workspaces/Fabric Blueprint")]
+
+    with pytest.raises(ValueError, match="could not establish a Git connection"):
+        create_feature_workspaces(manager, _sample_feature_config(), targets, "feature/new-thing")
 
 
 def test_delete_feature_workspaces_is_idempotent_when_workspace_missing() -> None:
@@ -369,13 +306,17 @@ def test_delete_feature_workspaces_is_idempotent_when_workspace_missing() -> Non
     manager.delete_workspace.assert_not_called()
 
 
-def test_delete_feature_workspaces_deletes_by_workspace_id() -> None:
+def test_delete_feature_workspaces_deletes_by_workspace_path() -> None:
     manager = Mock(spec=FeatureWorkspaceManager)
     manager.workspace_exists.return_value = True
-    manager.get_workspace_id.return_value = "44444444-4444-4444-4444-444444444444"
     targets = [Mock(workspace_folder="Fabric Blueprint")]
+    identity = build_feature_workspace_identity(
+        workspace_folder="Fabric Blueprint",
+        branch_ref="feature/new-thing",
+        template="[{branch_prefix}] {workspace_folder} ({branch_slug}-{hash8})",
+    )
 
     exit_code = delete_feature_workspaces(manager, _sample_feature_config(), targets, "feature/new-thing")
 
     assert exit_code == 0
-    manager.delete_workspace.assert_called_once_with("44444444-4444-4444-4444-444444444444")
+    manager.delete_workspace.assert_called_once_with(identity.display_name)

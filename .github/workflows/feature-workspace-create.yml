@@ -36,6 +36,11 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -r requirements.txt
 
+      - name: Validate Fabric CLI surface
+        run: |
+          fab --version
+          echo "Feature workspace flow uses: fab create/get/rm '<workspace>.Workspace' via 'fab -c' path commands"
+
       - name: Authenticate Fabric CLI
         run: |
           # GitHub-hosted runners may not provide a usable encrypted keyring.
