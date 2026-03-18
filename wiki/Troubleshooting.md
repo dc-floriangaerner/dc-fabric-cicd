@@ -118,6 +118,21 @@ Fix:
 2. confirm the connection already exists in Fabric
 3. confirm the service principal can use that connection
 
+## 10a) Fabric CLI Encrypted Cache Error in Feature Workflow
+
+Symptoms:
+- `An error occurred with the encrypted cache`
+- `Enable plaintext auth token fallback with 'config set encryption_fallback_enabled true'`
+
+Cause:
+- the GitHub Actions runner does not expose a usable encrypted credential store for Fabric CLI token caching
+
+Fix:
+1. set Fabric CLI fallback before login:
+   - `fab config set encryption_fallback_enabled true`
+2. rerun the feature workspace create or cleanup workflow
+3. if it still fails, confirm the `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, and `AZURE_TENANT_ID` secrets are valid
+
 ## 11) Feature Workspace Initialization Failed
 
 Symptoms:
