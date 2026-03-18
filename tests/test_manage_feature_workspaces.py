@@ -13,6 +13,7 @@ from scripts.manage_feature_workspaces import (
     FeatureGitConfig,
     FeatureWorkspaceConfig,
     FeatureWorkspaceManager,
+    FeatureWorkspacePermission,
     build_feature_workspace_identity,
     branch_matches_patterns,
     create_feature_workspaces,
@@ -82,6 +83,27 @@ def _sample_feature_config() -> FeatureWorkspaceConfig:
             connection_name="shared-github",
         ),
         permissions=[],
+        cleanup=FeatureCleanupConfig(delete_on_pr_close=True, delete_on_branch_delete=True),
+    )
+
+
+def _sample_feature_config_with_permissions() -> FeatureWorkspaceConfig:
+    return FeatureWorkspaceConfig(
+        branch_patterns=["feature/**", "bugfix/**"],
+        workspace_name_template="[{branch_prefix}] {workspace_folder} ({branch_slug}-{hash8})",
+        capacity_id="11111111-1111-1111-1111-111111111111",
+        git=FeatureGitConfig(
+            provider_type="GitHub",
+            repository_owner="contoso",
+            repository_name="dc-fabric-cicd",
+            connection_name="shared-github",
+        ),
+        permissions=[
+            FeatureWorkspacePermission(
+                principal_id="22222222-2222-2222-2222-222222222222",
+                role="Admin",
+            )
+        ],
         cleanup=FeatureCleanupConfig(delete_on_pr_close=True, delete_on_branch_delete=True),
     )
 
@@ -214,6 +236,29 @@ def test_create_feature_workspaces_is_idempotent_when_workspace_exists() -> None
     assert exit_code == 0
     manager.create_workspace.assert_not_called()
     manager.connect_workspace_to_git.assert_called_once()
+
+
+def test_create_feature_workspaces_applies_permissions_by_workspace_id() -> None:
+    manager = Mock(spec=FeatureWorkspaceManager)
+    manager.resolve_connection_id.return_value = "33333333-3333-3333-3333-333333333333"
+    manager.workspace_exists.return_value = True
+    manager.get_workspace_id.return_value = "44444444-4444-4444-4444-444444444444"
+    manager.initialize_workspace_from_git.return_value = {"requiredAction": "None"}
+    targets = [Mock(workspace_folder="Fabric Blueprint", git_directory="workspaces/Fabric Blueprint")]
+
+    exit_code = create_feature_workspaces(
+        manager,
+        _sample_feature_config_with_permissions(),
+        targets,
+        "feature/new-thing",
+    )
+
+    assert exit_code == 0
+    manager.set_workspace_permission.assert_called_once_with(
+        "44444444-4444-4444-4444-444444444444",
+        "22222222-2222-2222-2222-222222222222",
+        "Admin",
+    )
 
 
 def test_delete_feature_workspaces_is_idempotent_when_workspace_missing() -> None:

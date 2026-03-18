@@ -109,8 +109,8 @@ class FeatureWorkspaceManager:
     def delete_workspace(self, display_name: str) -> None:
         self.cli.run(["rm", f"{display_name}.Workspace", "-f"])
 
-    def set_workspace_permission(self, display_name: str, principal_id: str, role: str) -> None:
-        self.cli.run(["acl", "set", f"{display_name}.Workspace", "-I", principal_id, "-R", role.lower()])
+    def set_workspace_permission(self, workspace_ref: str, principal_id: str, role: str) -> None:
+        self.cli.run(["acl", "set", f"{workspace_ref}.Workspace", "-I", principal_id, "-R", role.lower(), "-f"])
 
     def resolve_connection_id(self, connection_name: str) -> str:
         result = self.cli.run(["get", f".connections/{connection_name}.Connection", "-q", "id"])
@@ -395,11 +395,11 @@ def create_feature_workspaces(
             logger.info("-> Creating workspace on capacity %s", feature_config.capacity_id)
             manager.create_workspace(identity.display_name, feature_config.capacity_id)
 
+        workspace_id = manager.get_workspace_id(identity.display_name)
+
         for permission in feature_config.permissions:
             logger.info("-> Applying %s role to %s", permission.role, permission.principal_id)
-            manager.set_workspace_permission(identity.display_name, permission.principal_id, permission.role)
-
-        workspace_id = manager.get_workspace_id(identity.display_name)
+            manager.set_workspace_permission(workspace_id, permission.principal_id, permission.role)
         logger.info("-> Connecting workspace to Git branch '%s' in '%s'", identity.branch_name, identity.git_directory)
         manager.connect_workspace_to_git(
             workspace_id=workspace_id,
