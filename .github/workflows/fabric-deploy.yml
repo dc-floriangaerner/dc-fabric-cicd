@@ -25,7 +25,7 @@ on:
           - prod
 
 env:
-  PYTHON_VERSION: '3.12'
+  PYTHON_VERSION: '3.13'
   WORKSPACES_DIRECTORY: 'workspaces'
   TARGET_ENV: ${{ github.event_name == 'push' && 'dev' || inputs.environment }}
   TRIGGER_TYPE: ${{ github.event_name == 'push' && 'Automatic' || 'Manual' }}

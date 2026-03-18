@@ -6,17 +6,19 @@ Use `README.md` for fast setup, then use these pages for details.
 ## Start Here
 
 1. [Setup Guide](Setup-Guide): complete first-time setup end-to-end.
-2. [Workspace Configuration](Workspace-Configuration): understand `config.yml` and `parameter.yml`.
-3. [Deployment Workflow](Deployment-Workflow): exact behavior of GitHub workflows.
-4. [Troubleshooting](Troubleshooting): fix common failure modes.
-5. [FAQ](FAQ): concise answers to recurring questions.
-6. [Fabric CI/CD Options Comparison](Fabric-CICD-Options-Comparison): deep comparison of Fabric CI/CD tooling choices.
+2. [Feature Workspace Lifecycle](Feature-Workspace-Lifecycle): optional branch-based ephemeral workspaces.
+3. [Workspace Configuration](Workspace-Configuration): understand `config.yml` and `parameter.yml`.
+4. [Deployment Workflow](Deployment-Workflow): exact behavior of GitHub workflows.
+5. [Troubleshooting](Troubleshooting): fix common failure modes.
+6. [FAQ](FAQ): concise answers to recurring questions.
+7. [Fabric CI/CD Options Comparison](Fabric-CICD-Options-Comparison): deep comparison of Fabric CI/CD tooling choices.
 
 ## What This Repository Is
 
 - A toolkit to bootstrap Fabric CI/CD quickly.
 - Terraform provisions Fabric workspaces and admin role assignment.
 - Python scripts + `fabric-cicd` deploy workspace content from `workspaces/`.
+- Optional feature lifecycle creates ephemeral workspaces from `feature/**` and `bugfix/**` branches.
 - One sample workspace (`Fabric Blueprint`) is included as minimum deployable content.
 
 ## What This Repository Is Not

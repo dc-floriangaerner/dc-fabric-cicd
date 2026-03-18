@@ -5,6 +5,7 @@
 - [Setup Guide](Setup-Guide)
 
 ## Configuration
+- [Feature Workspace Lifecycle](Feature-Workspace-Lifecycle)
 - [Workspace Configuration](Workspace-Configuration)
 
 ## Deployment

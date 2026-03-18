@@ -24,6 +24,21 @@ No. It is minimal sample content to demonstrate deployment mechanics.
 
 No. Workspaces are expected to be provisioned by Terraform first.
 
+## Do feature branches create workspaces automatically?
+
+Yes, but only for branches matching `feature/**` or `bugfix/**`, and only for workspace folders with `feature_workspace.enabled: true`.
+
+## How do I opt a workspace in?
+
+Add this to the workspace `config.yml`:
+
+```yaml
+feature_workspace:
+  enabled: true
+```
+
+You also need the central `feature-workspaces.yml` configured correctly.
+
 ## Why did my merge not auto-deploy?
 
 `fabric-deploy.yml` only auto-triggers when `workspaces/**` changes are pushed to `main`.
@@ -64,3 +79,8 @@ Exact names:
 2. `terraform/environments/*.tfvars` values.
 3. Workspace `config.yml` and `parameter.yml`.
 4. Local scanner/test commands.
+
+## Why doesn't a later Git push auto-update my feature workspace?
+
+Because feature workspaces are intentionally Fabric-first after initialization.
+The repository seeds them from Git once, then expects ongoing edits and commits to happen from Fabric to avoid overwriting unpublished workspace changes.

@@ -1,0 +1,62 @@
+name: Feature Workspace - Cleanup
+
+on:
+  pull_request:
+    types:
+      - closed
+    branches:
+      - main
+  delete:
+
+env:
+  PYTHON_VERSION: '3.13'
+  WORKSPACES_DIRECTORY: 'workspaces'
+  FEATURE_CONFIG: 'feature-workspaces.yml'
+
+concurrency:
+  group: feature-workspace-cleanup-${{ github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  cleanup_feature_workspaces:
+    name: Delete feature workspaces
+    if: >
+      (github.event_name == 'pull_request' &&
+       (startsWith(github.event.pull_request.head.ref, 'feature/') || startsWith(github.event.pull_request.head.ref, 'bugfix/'))) ||
+      (github.event_name == 'delete' &&
+       github.event.ref_type == 'branch' &&
+       (startsWith(github.event.ref, 'feature/') || startsWith(github.event.ref, 'bugfix/')))
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+          cache-dependency-path: |
+            requirements.txt
+            requirements-dev.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+
+      - name: Authenticate Fabric CLI
+        run: |
+          fab auth login \
+            -u "${{ secrets.AZURE_CLIENT_ID }}" \
+            -p "${{ secrets.AZURE_CLIENT_SECRET }}" \
+            --tenant "${{ secrets.AZURE_TENANT_ID }}"
+
+      - name: Delete feature workspaces
+        run: |
+          python -m scripts.manage_feature_workspaces delete \
+            --workspaces_directory "${{ env.WORKSPACES_DIRECTORY }}" \
+            --config "${{ env.FEATURE_CONFIG }}" \
+            --event-name "${{ github.event_name }}" \
+            --github-event-path "${{ github.event_path }}"

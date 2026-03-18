@@ -9,6 +9,8 @@ This page describes exactly what is implemented in current workflows.
 | CI | `.github/workflows/ci.yml` | Tests and validation on PRs | `pull_request` to `main` on configured paths |
 | Terraform | `.github/workflows/terraform.yml` | Provision/update Fabric workspace infrastructure | push on `terraform/**`, manual dispatch, reusable call |
 | Fabric Deploy | `.github/workflows/fabric-deploy.yml` | Deploy workspace items | push on `workspaces/**`, manual dispatch |
+| Feature Workspace Create | `.github/workflows/feature-workspace-create.yml` | Create and initialize ephemeral branch workspaces | `create` for `feature/**` and `bugfix/**` |
+| Feature Workspace Cleanup | `.github/workflows/feature-workspace-cleanup.yml` | Delete ephemeral branch workspaces | PR close to `main`, branch delete |
 | Wiki Sync | `.github/workflows/sync-wiki.yml` | Sync `/wiki` folder to GitHub Wiki | push on `wiki/**`, manual dispatch |
 
 ## End-to-End Path
@@ -19,6 +21,13 @@ This page describes exactly what is implemented in current workflows.
 4. `fabric-deploy.yml` first calls reusable `terraform.yml`.
 5. Deploy job runs scanner, then deploy script.
 6. Team promotes manually to `test` and `prod` via workflow dispatch.
+
+Feature branch lifecycle is separate:
+1. Create `feature/**` or `bugfix/**` branch.
+2. `feature-workspace-create.yml` creates all opted-in workspaces.
+3. Each feature workspace connects to the branch and pulls `workspaces/<workspace folder>` once.
+4. Ongoing authoring happens in Fabric.
+5. Cleanup deletes the feature workspaces when the PR closes or the branch is deleted.
 
 ## Config-Based Deployment Flow
 
@@ -71,6 +80,36 @@ Important:
 - Parameterization rule syntax is defined by `fabric-cicd`:
   [https://microsoft.github.io/fabric-cicd/latest/how_to/parameterization/](https://microsoft.github.io/fabric-cicd/latest/how_to/parameterization/)
 
+## Feature Workspace Workflows
+
+### `feature-workspace-create.yml`
+
+- Trigger: GitHub `create`
+- Branch gate:
+  - `feature/**`
+  - `bugfix/**`
+- Flow:
+  1. checkout repo
+  2. install Python deps and Fabric CLI
+  3. authenticate Fabric CLI with the service principal
+  4. run `python -m scripts.manage_feature_workspaces create ...`
+
+### `feature-workspace-cleanup.yml`
+
+- Triggers:
+  - `pull_request` closed against `main`
+  - GitHub `delete`
+- Flow:
+  1. checkout repo
+  2. install Python deps and Fabric CLI
+  3. authenticate Fabric CLI with the service principal
+  4. run `python -m scripts.manage_feature_workspaces delete ...`
+
+Important:
+- these workflows never invoke Terraform
+- there is no branch-push sync workflow for feature workspaces
+- later Git pushes do not auto-update an already initialized feature workspace
+
 ## Environment Promotion
 
 - Dev:
@@ -114,6 +153,7 @@ CI also runs:
 
 ## Related Pages
 
+- [Feature Workspace Lifecycle](Feature-Workspace-Lifecycle)
 - [Setup Guide](Setup-Guide)
 - [Workspace Configuration](Workspace-Configuration)
 - [Troubleshooting](Troubleshooting)

@@ -24,3 +24,6 @@ features:
   - enable_experimental_features
   - enable_config_deploy
   - enable_shortcut_publish
+
+feature_workspace:
+  enabled: false

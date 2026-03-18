@@ -10,13 +10,14 @@ on:
       - 'scripts/**'
       - 'tests/**'
       - 'workspaces/**'
+      - 'feature-workspaces.yml'
       - 'requirements.txt'
       - 'requirements-dev.txt'
       - 'pyproject.toml'
-      - '.github/workflows/ci.yml'
+      - '.github/workflows/**'
 
 env:
-  PYTHON_VERSION: '3.12'
+  PYTHON_VERSION: '3.13'
 
 # Cancel outdated PR runs to shorten feedback cycles.
 concurrency:

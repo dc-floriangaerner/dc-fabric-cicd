@@ -28,6 +28,7 @@ venv/
 ENV/
 env/
 .venv
+.venv313
 
 # IDE
 .vscode/

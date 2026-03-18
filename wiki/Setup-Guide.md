@@ -19,6 +19,7 @@ Create one Service Principal and capture:
 The same principal is used by:
 - `terraform.yml` (workspace provisioning)
 - `fabric-deploy.yml` (content deployment)
+- feature workspace workflows (ephemeral branch workspaces via Fabric CLI)
 
 ## Step 2: Bootstrap Terraform State Storage (One-Time)
 
@@ -60,6 +61,8 @@ Create repository secrets:
 - `AZURE_CLIENT_SECRET`
 - `AZURE_TENANT_ID`
 - `ARM_SUBSCRIPTION_ID`
+
+These same `AZURE_*` secrets are also used by the feature workspace workflows for Fabric CLI service principal authentication.
 
 ## Step 5: Configure GitHub Environments
 
@@ -114,7 +117,22 @@ python -m scripts.check_unmapped_ids --workspaces_directory workspaces
 pytest tests/ -v
 ```
 
-## Step 9: Deploy
+## Optional Step 9: Enable Feature Workspace Lifecycle
+
+If you want ephemeral branch workspaces:
+1. Configure `feature-workspaces.yml`
+2. Set a real `capacity_id`
+3. Set Git repository owner/name
+4. Set either `git.connection_id` or `git.connection_name`
+5. Add static `permissions` entries for the principals that should access feature workspaces
+6. Opt individual workspaces in with `feature_workspace.enabled: true` in their `config.yml`
+
+Fabric prerequisites:
+- Fabric CLI available through `requirements.txt` (`ms-fabric-cli`)
+- existing Fabric Git connection that points to the GitHub repository
+- service principal permissions to create/delete workspaces, manage workspace ACLs, and connect workspaces to Git
+
+## Step 10: Deploy
 
 ### Dev (automatic)
 - Merge a PR to `main` with changes under `workspaces/**`.
@@ -135,6 +153,7 @@ The deploy workflow always runs Terraform prerequisites first.
 
 ## Next
 
+- [Feature Workspace Lifecycle](Feature-Workspace-Lifecycle)
 - [Workspace Configuration](Workspace-Configuration)
 - [Deployment Workflow](Deployment-Workflow)
 - [Troubleshooting](Troubleshooting)

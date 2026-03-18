@@ -1,10 +1,13 @@
 # Fabric CI/CD Toolkit
 
-[![Python Version](https://img.shields.io/badge/python-3.11%2B-blue)](https://www.python.org/downloads/)
+[![Python Version](https://img.shields.io/badge/python-3.13-blue)](https://www.python.org/downloads/)
+[![CI - Tests and Code Quality](https://github.com/dc-floriangaerner/dc-fabric-cicd/actions/workflows/ci.yml/badge.svg)](https://github.com/dc-floriangaerner/dc-fabric-cicd/actions/workflows/ci.yml)
+[![Deploy to Microsoft Fabric](https://github.com/dc-floriangaerner/dc-fabric-cicd/actions/workflows/fabric-deploy.yml/badge.svg)](https://github.com/dc-floriangaerner/dc-fabric-cicd/actions/workflows/fabric-deploy.yml)
 
 This repository is a practical starter toolkit for Microsoft Fabric CI/CD:
 - `terraform/` provisions Fabric workspaces and role assignments.
 - `workspaces/` + `scripts/` deploy Fabric items with `fabric-cicd`.
+- `feature-workspaces.yml` + `scripts/manage_feature_workspaces.py` manage optional ephemeral branch workspaces with Fabric CLI.
 - `.github/workflows/` automates validation and deployment.
 
 The included `workspaces/Fabric Blueprint` content is a minimum sample so the pipeline has real deployable assets.
@@ -60,6 +63,17 @@ The included `workspaces/Fabric Blueprint` content is a minimum sample so the pi
 
 ## Current CI/CD Behavior
 
+### Stable vs Feature Lifecycle
+
+- Stable stages (`dev`, `test`, `prod`):
+  - provisioned by `terraform/`
+  - deployed by `scripts/deploy_to_fabric.py`
+  - remain the source of truth for long-lived environments
+- Feature stages (`feature/**`, `bugfix/**`):
+  - created and deleted by Fabric CLI through `scripts/manage_feature_workspaces.py`
+  - initialized from Git once, then treated as Fabric-first authoring workspaces
+  - do not auto-sync later branch pushes back into Fabric
+
 ### `ci.yml`
 - Trigger: PRs to `main` with changes in `scripts/**`, `tests/**`, `workspaces/**`, dependency files, or `ci.yml`.
 - Runs:
@@ -83,6 +97,20 @@ The included `workspaces/Fabric Blueprint` content is a minimum sample so the pi
 - Trigger: push to `main` with `wiki/**` changes.
 - Syncs `/wiki` folder to GitHub Wiki.
 
+### `feature-workspace-create.yml`
+- Trigger: branch creation for `feature/**` and `bugfix/**`.
+- Creates all workspaces with `feature_workspace.enabled: true`.
+- Uses `[{branch_prefix}]` naming, where `F` means `feature/**` and `B` means `bugfix/**`.
+- Connects each created workspace to the current Git branch using the fixed directory `workspaces/<workspace folder>`.
+- Initializes the workspace from Git once.
+
+### `feature-workspace-cleanup.yml`
+- Trigger:
+  - PR close against `main`
+  - branch delete for `feature/**` and `bugfix/**`
+- Deletes the expected feature workspaces best-effort and idempotently.
+- Does not run Terraform.
+
 ## Repository Contract
 
 ### Infrastructure
@@ -91,6 +119,12 @@ The included `workspaces/Fabric Blueprint` content is a minimum sample so the pi
 ### Content Deployment
 - `scripts/deploy_to_fabric.py` deploys items to pre-existing workspaces.
 - Workspaces are auto-discovered from folders in `workspaces/` that contain `config.yml`.
+
+### Feature Workspace Lifecycle
+- `feature-workspaces.yml` is the central contract for ephemeral branch workspaces.
+- Only workspaces with `feature_workspace.enabled: true` in `workspaces/*/config.yml` participate.
+- The Git directory is fixed to `workspaces/<workspace folder>`.
+- After initialization, the Fabric workspace is the active authoring surface for the feature branch lifecycle.
 
 ### Parameterization
 - Every workspace needs `parameter.yml`.
@@ -125,6 +159,7 @@ python -m scripts.deploy_to_fabric --workspaces_directory workspaces --environme
 
 - Wiki home: [wiki/Home.md](wiki/Home.md)
 - Setup guide: [wiki/Setup-Guide.md](wiki/Setup-Guide.md)
+- Feature lifecycle: [wiki/Feature-Workspace-Lifecycle.md](wiki/Feature-Workspace-Lifecycle.md)
 - Workspace config: [wiki/Workspace-Configuration.md](wiki/Workspace-Configuration.md)
 - Deployment flow: [wiki/Deployment-Workflow.md](wiki/Deployment-Workflow.md)
 - Troubleshooting: [wiki/Troubleshooting.md](wiki/Troubleshooting.md)

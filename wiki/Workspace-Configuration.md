@@ -21,6 +21,7 @@ Current sample (`workspaces/Fabric Blueprint/config.yml`) contains:
 - `publish.skip.*`
 - `unpublish.skip.*`
 - `features`
+- optional `feature_workspace.enabled`
 
 Example:
 
@@ -36,6 +37,23 @@ core:
 
 Critical rule:
 - Workspace names in `config.yml` must match names provisioned by Terraform in `terraform/environments/*.tfvars`.
+
+## Feature Workspace Opt-In
+
+Ephemeral feature workspaces are opt-in per workspace folder.
+
+Example:
+
+```yaml
+feature_workspace:
+  enabled: true
+```
+
+Rules:
+- `enabled: true` opts the workspace into feature branch lifecycle workflows
+- omitted or `false` means the workspace only participates in the stable `dev|test|prod` flow
+- the Git directory is always derived as `workspaces/<workspace folder>`
+- changed files do not influence selection; all opted-in workspaces are included
 
 ## `parameter.yml` Contract
 
