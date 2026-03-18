@@ -94,20 +94,53 @@ class FeatureWorkspaceManager:
     def __init__(self, cli: FabCli | None = None):
         self.cli = cli or FabCli()
 
+    def list_workspaces(self) -> list[dict[str, Any]]:
+        """Return all accessible workspaces through the Fabric REST API."""
+        workspaces: list[dict[str, Any]] = []
+        continuation_token: str | None = None
+
+        while True:
+            endpoint = "workspaces"
+            if continuation_token:
+                endpoint = f"{endpoint}?continuationToken={continuation_token}"
+            args = ["api", "-X", "get", endpoint]
+            response = self.cli.run_json(args)
+            page_items = response.get("value", [])
+            if not isinstance(page_items, list):
+                raise ValueError("Fabric workspaces API returned an invalid payload for 'value'")
+            workspaces.extend(item for item in page_items if isinstance(item, dict))
+
+            raw_continuation = response.get("continuationToken")
+            continuation_token = str(raw_continuation).strip() if raw_continuation else None
+            if not continuation_token:
+                return workspaces
+
+    def find_workspace(self, display_name: str) -> dict[str, Any] | None:
+        """Find a workspace by exact display name."""
+        for workspace in self.list_workspaces():
+            if workspace.get("displayName") == display_name:
+                return workspace
+        return None
+
     def workspace_exists(self, display_name: str) -> bool:
-        result = self.cli.run(["exists", f"{display_name}.Workspace"], check=False)
-        return result.returncode == 0
+        return self.find_workspace(display_name) is not None
 
     def get_workspace_id(self, display_name: str) -> str:
-        result = self.cli.run(["get", f"{display_name}.Workspace", "-q", "id"])
-        return result.stdout.strip().strip('"')
+        workspace = self.find_workspace(display_name)
+        if workspace is None:
+            raise ValueError(f"Workspace '{display_name}' was not found via the Fabric workspaces API")
+
+        workspace_id = workspace.get("id")
+        if not isinstance(workspace_id, str) or not workspace_id.strip():
+            raise ValueError(f"Workspace '{display_name}' did not return a valid id")
+        return workspace_id.strip()
 
     def create_workspace(self, display_name: str, capacity_id: str) -> dict[str, Any]:
         payload = {"displayName": display_name, "capacityId": capacity_id}
         return self.cli.run_json(["api", "-X", "post", "workspaces", "-i", json.dumps(payload)])
 
-    def delete_workspace(self, display_name: str) -> None:
-        self.cli.run(["rm", f"{display_name}.Workspace", "-f"])
+    def delete_workspace(self, workspace_id: str) -> None:
+        self.cli.run(["api", "-X", "delete", f"workspaces/{workspace_id}"])
 
     def set_workspace_permission(self, workspace_ref: str, principal_id: str, role: str) -> None:
         self.cli.run(["acl", "set", f"{workspace_ref}.Workspace", "-I", principal_id, "-R", role.lower(), "-f"])
@@ -448,7 +481,8 @@ def delete_feature_workspaces(
             continue
 
         logger.info("-> Deleting workspace")
-        manager.delete_workspace(identity.display_name)
+        workspace_id = manager.get_workspace_id(identity.display_name)
+        manager.delete_workspace(workspace_id)
 
     return EXIT_SUCCESS
 

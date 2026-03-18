@@ -8,6 +8,7 @@ from unittest.mock import Mock
 
 import pytest
 
+from scripts.fabric.fab_cli import FabCli
 from scripts.manage_feature_workspaces import (
     FeatureCleanupConfig,
     FeatureGitConfig,
@@ -200,6 +201,41 @@ def test_resolve_branch_name_for_pull_request_closed_event(tmp_path: Path) -> No
     assert branch == "bugfix/fix-a-thing"
 
 
+def test_feature_workspace_manager_finds_workspace_by_display_name_across_pages() -> None:
+    cli = Mock(spec=FabCli)
+    cli.run_json.side_effect = [
+        {
+            "value": [{"id": "11111111-1111-1111-1111-111111111111", "displayName": "Other Workspace"}],
+            "continuationToken": "next-page",
+        },
+        {
+            "value": [
+                {
+                    "id": "44444444-4444-4444-4444-444444444444",
+                    "displayName": "[F] Fabric Blueprint (feature-test-deployment-a8b7db56)",
+                }
+            ]
+        },
+    ]
+    manager = FeatureWorkspaceManager(cli=cli)
+
+    workspace = manager.find_workspace("[F] Fabric Blueprint (feature-test-deployment-a8b7db56)")
+
+    assert workspace == {
+        "id": "44444444-4444-4444-4444-444444444444",
+        "displayName": "[F] Fabric Blueprint (feature-test-deployment-a8b7db56)",
+    }
+
+
+def test_feature_workspace_manager_raises_when_workspace_is_missing() -> None:
+    cli = Mock(spec=FabCli)
+    cli.run_json.return_value = {"value": []}
+    manager = FeatureWorkspaceManager(cli=cli)
+
+    with pytest.raises(ValueError, match="was not found via the Fabric workspaces API"):
+        manager.get_workspace_id("[F] Fabric Blueprint (feature-test-deployment-a8b7db56)")
+
+
 def test_create_feature_workspaces_constructs_expected_calls() -> None:
     manager = Mock(spec=FeatureWorkspaceManager)
     manager.resolve_connection_id.return_value = "33333333-3333-3333-3333-333333333333"
@@ -270,3 +306,15 @@ def test_delete_feature_workspaces_is_idempotent_when_workspace_missing() -> Non
 
     assert exit_code == 0
     manager.delete_workspace.assert_not_called()
+
+
+def test_delete_feature_workspaces_deletes_by_workspace_id() -> None:
+    manager = Mock(spec=FeatureWorkspaceManager)
+    manager.workspace_exists.return_value = True
+    manager.get_workspace_id.return_value = "44444444-4444-4444-4444-444444444444"
+    targets = [Mock(workspace_folder="Fabric Blueprint")]
+
+    exit_code = delete_feature_workspaces(manager, _sample_feature_config(), targets, "feature/new-thing")
+
+    assert exit_code == 0
+    manager.delete_workspace.assert_called_once_with("44444444-4444-4444-4444-444444444444")
