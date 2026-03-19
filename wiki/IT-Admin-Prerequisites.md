@@ -8,6 +8,19 @@ It describes only:
 - what IT needs to provide to the project team
 - why each item is required
 
+## Name Mapping
+
+The project uses GitHub secret names.
+The Azure portal uses different labels.
+
+| Azure / Entra portal label | Project / GitHub secret name | Notes |
+|---|---|---|
+| Application (client) ID | `AZURE_CLIENT_ID` | from the App Registration / Service Principal |
+| Directory (tenant) ID | `AZURE_TENANT_ID` | tenant identifier in Microsoft Entra ID |
+| Client secret Value | `AZURE_CLIENT_SECRET` | use the secret value, not the secret ID |
+| Subscription ID | `ARM_SUBSCRIPTION_ID` | Azure subscription hosting the Terraform state storage |
+| Group Object ID | `entra_admin_group_object_id` | Object ID of the Entra admin security group |
+
 ## What IT Needs To Create
 
 ### 1. One CI/CD Service Principal
@@ -16,9 +29,9 @@ Please create one Microsoft Entra ID application / Service Principal for this so
 
 Please provide back to the project team:
 
-- `AZURE_CLIENT_ID`
-- `AZURE_CLIENT_SECRET`
-- `AZURE_TENANT_ID`
+- Application (client) ID -> `AZURE_CLIENT_ID`
+- Client secret Value -> `AZURE_CLIENT_SECRET`
+- Directory (tenant) ID -> `AZURE_TENANT_ID`
 
 Why this is needed:
 
@@ -96,10 +109,10 @@ Why this is needed:
 
 Please create these repository secrets:
 
-- `AZURE_CLIENT_ID`
-- `AZURE_CLIENT_SECRET`
-- `AZURE_TENANT_ID`
-- `ARM_SUBSCRIPTION_ID`
+- `AZURE_CLIENT_ID` = Application (client) ID
+- `AZURE_CLIENT_SECRET` = Client secret Value
+- `AZURE_TENANT_ID` = Directory (tenant) ID
+- `ARM_SUBSCRIPTION_ID` = Subscription ID
 
 Why this is needed:
 
@@ -148,12 +161,12 @@ Please send the following values to the project team:
 
 | Item | What IT provides |
 |---|---|
-| Service Principal | `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, `AZURE_TENANT_ID` |
+| Service Principal | Application (client) ID, Client secret Value, Directory (tenant) ID |
 | Entra admin group | `entra_admin_group_object_id` |
 | Dev capacity | capacity ID |
 | Test capacity | capacity ID |
 | Prod capacity | capacity ID |
-| Azure subscription | `ARM_SUBSCRIPTION_ID` |
+| Azure subscription | Subscription ID |
 | Terraform state storage | actual storage naming if different from the default |
 
 ## Optional Only: Feature Workspace Setup
@@ -203,13 +216,13 @@ Why this is needed:
 If a very short IT request is needed, this is the minimum ask:
 
 1. Create one Service Principal and provide:
-   `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, `AZURE_TENANT_ID`
+   Application (client) ID, Client secret Value, Directory (tenant) ID
 2. Create one Entra admin group and provide:
    `entra_admin_group_object_id`
 3. Provide Fabric capacity IDs for:
    Dev, Test, Prod
 4. Create or provide Azure Blob Storage for Terraform state and provide:
-   `ARM_SUBSCRIPTION_ID`
+   Subscription ID
 5. Grant the Service Principal:
    `Storage Blob Data Contributor` on the Terraform state storage account
 6. Create GitHub Environments:
