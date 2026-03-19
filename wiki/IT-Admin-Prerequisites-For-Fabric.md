@@ -169,7 +169,7 @@ Please send the following values to the project team:
 | Item | What IT provides |
 |---|---|
 | Service Principal | Application (client) ID, Client secret Value, Directory (tenant) ID |
-| Entra admin group | `entra_admin_group_object_id` |
+| Entra admin group | Object ID |
 | Dev capacity | capacity ID |
 | Test capacity | capacity ID |
 | Prod capacity | capacity ID |
@@ -209,15 +209,6 @@ Why this is needed:
 
 - the feature workspace automation uses the Service Principal to connect and initialize those workspaces from Git
 
-### 4. Feature Workspace Admin Access
-
-Please provide the principal IDs that should receive access to feature workspaces and confirm the role to assign.
-
-Why this is needed:
-
-- the automation applies workspace permissions after creating each feature workspace
-- this ensures the right administrators or users can access those temporary workspaces
-
 ## Short Request Summary
 
 If a very short IT request is needed, this is the minimum ask:
@@ -235,4 +226,4 @@ If a very short IT request is needed, this is the minimum ask:
 6. Create GitHub Environments:
    `dev`, `test`, `prod`
 7. Optional only for feature workspaces:
-   provide a feature capacity, a Fabric Git connection, and the admin principals for those workspaces
+   provide a feature capacity and a Fabric Git connection
