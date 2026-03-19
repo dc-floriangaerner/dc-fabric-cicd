@@ -153,20 +153,15 @@ Why this is needed:
 
 Please enable the following settings in the Fabric Admin Portal.
 
-- Users can create Fabric items
-  Enable at least for the Entra admin group.
-- Create workspaces
-  Enable at least for the Entra admin group.
-- Use semantic models accross workspaces
-  Enable for the entire organization.
-- Service principals can create workspaces, connections, and deployment pipelines
-  Enable at least for the CI/CD Service Principal that is created for this solution.
-- Service principals can call Fabric public APIs
-  Enable at least for the CI/CD Service Principal that is created for this solution.
-- Users can synchronize workspace items with their Git repositories
-  Enable for the entire organization.
-- Users can sync workspace items with GitHub repositories
-  Enable for the entire organization.
+| Fabric Admin Portal setting | Minimum scope to enable |
+|---|---|
+| Users can create Fabric items | Entra admin group at minimum |
+| Create workspaces | Entra admin group at minimum |
+| Use semantic models accross workspaces | Entire organization |
+| Service principals can create workspaces, connections, and deployment pipelines | CI/CD Service Principal at minimum |
+| Service principals can call Fabric public APIs | CI/CD Service Principal at minimum |
+| Users can synchronize workspace items with their Git repositories | Entire organization |
+| Users can sync workspace items with GitHub repositories | Entire organization |
 
 Why this is needed:
 
