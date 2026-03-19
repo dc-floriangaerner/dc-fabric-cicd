@@ -72,6 +72,12 @@ Why this is needed:
 - each Fabric workspace must be attached to a capacity
 - the environments are deployed separately, so each stage needs a valid target capacity
 
+Important guidance:
+
+- the same capacity can be reused across multiple stages if needed
+- it is highly recommended to use a dedicated capacity for Production
+- a dedicated Production capacity reduces the risk of non-production workloads affecting business-critical workloads
+
 ### 4. Azure Storage for Terraform State
 
 Please create or provide Azure Blob Storage for Terraform state.
