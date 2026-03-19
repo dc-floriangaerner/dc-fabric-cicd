@@ -122,34 +122,7 @@ Why this is needed:
 - Terraform stores its state in Azure Blob Storage
 - without state storage, infrastructure changes cannot be tracked or applied safely
 
-### 5. GitHub Environment Setup
-
-Please create these GitHub Environments exactly:
-
-- `dev`
-- `test`
-- `prod`
-
-Why this is needed:
-
-- the deployment workflows target these environment names directly
-- approvals and protection rules can be managed through these environments
-
-### 6. GitHub Repository Secrets
-
-Please create these repository secrets:
-
-- `AZURE_CLIENT_ID` = Application (client) ID
-- `AZURE_CLIENT_SECRET` = Client secret Value
-- `AZURE_TENANT_ID` = Directory (tenant) ID
-- `ARM_SUBSCRIPTION_ID` = Subscription ID
-
-Why this is needed:
-
-- the GitHub Actions workflows use these secrets for authentication
-- the Terraform workflow needs both Fabric authentication and Azure subscription access
-
-### 7. Fabric Admin Portal Settings
+### 5. Fabric Admin Portal Settings
 
 Please enable the following settings in the Fabric Admin Portal.
 
@@ -184,15 +157,6 @@ Scope:
 Why this is needed:
 
 - Terraform must be able to read and write its state file in Blob Storage
-
-### 2. Tenant Allowance for the CI/CD Service Principal
-
-Please ensure the Service Principal is allowed to authenticate and be used for the required Microsoft Fabric automation.
-
-Why this is needed:
-
-- the solution relies on Service Principal based automation
-- if tenant policy blocks this identity from the required automation path, deployment will fail
 
 ## What IT Needs To Send Back
 
@@ -257,7 +221,5 @@ If a very short IT request is needed, this is the minimum ask:
 6. Grant the Service Principal:
    `Storage Blob Data Contributor` on the Terraform state storage account
 7. Enable the required Fabric Admin Portal settings for workspace creation, public APIs, and Git integration
-8. Create GitHub Environments:
-   `dev`, `test`, `prod`
-9. Optional only for feature workspaces:
+8. Optional only for feature workspaces:
    provide a feature capacity and a Fabric Git connection
