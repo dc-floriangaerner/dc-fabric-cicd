@@ -80,6 +80,13 @@ Important guidance:
 
 ### 4. Azure Storage for Terraform State
 
+In this project, Terraform is used to:
+
+- create the Fabric workspaces
+- assign each workspace to the configured Fabric capacity
+- assign the Entra admin group as `Admin` on each workspace
+- keep those infrastructure changes managed and repeatable across environments
+
 Please create or provide Azure Blob Storage for Terraform state.
 
 Current default naming in this repository:
