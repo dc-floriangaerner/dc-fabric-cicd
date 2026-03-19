@@ -3,7 +3,7 @@
 ## Getting Started
 - [Home](Home)
 - [Setup Guide](Setup-Guide)
-- [IT Admin Prerequisites for Fabric](IT-Admin-Prerequisites)
+- [IT Admin Prerequisites for Fabric](IT-Admin-Prerequisites-For-Fabric)
 
 ## Configuration
 - [Feature Workspace Lifecycle](Feature-Workspace-Lifecycle)
