@@ -60,7 +60,7 @@ Note:
 
 ### 3. Fabric Capacity Assignment
 
-Please provide a Fabric capacity for each environment:
+Please create or provide a Fabric capacity in Azure for each environment:
 
 - Dev
 - Test
@@ -71,11 +71,23 @@ Please provide back to the project team:
 - the capacity ID for Dev
 - the capacity ID for Test
 - the capacity ID for Prod
+- the capacity names used for Dev, Test, and Prod
 
 Why this is needed:
 
 - each Fabric workspace must be attached to a capacity
 - the environments are deployed separately, so each stage needs a valid target capacity
+
+How to set this up:
+
+- create the required Microsoft Fabric capacities in Azure
+- add the Entra admin group as a capacity administrator
+- add the CI/CD Service Principal as a capacity administrator
+
+Why the capacity administrator assignment is needed:
+
+- the Entra admin group needs administrative access to the capacity
+- the CI/CD Service Principal needs to be able to use the capacity for workspace provisioning and workspace assignment
 
 Important guidance:
 
@@ -137,6 +149,31 @@ Why this is needed:
 - the GitHub Actions workflows use these secrets for authentication
 - the Terraform workflow needs both Fabric authentication and Azure subscription access
 
+### 7. Fabric Admin Portal Settings
+
+Please enable the following settings in the Fabric Admin Portal.
+
+- Users can create Fabric items
+  Enable at least for the Entra admin group.
+- Create workspaces
+  Enable at least for the Entra admin group.
+- Use semantic models accross workspaces
+  Enable for the entire organization.
+- Service principals can create workspaces, connections, and deployment pipelines
+  Enable at least for the CI/CD Service Principal that is created for this solution.
+- Service principals can call Fabric public APIs
+  Enable at least for the CI/CD Service Principal that is created for this solution.
+- Users can synchronize workspace items with their Git repositories
+  Enable for the entire organization.
+- Users can sync workspace items with GitHub repositories
+  Enable for the entire organization.
+
+Why this is needed:
+
+- these settings allow the required Fabric automation and Git integration to work
+- the Service Principal based deployment flow depends on the service-principal-specific settings being enabled
+- workspace and Git features depend on the corresponding tenant settings being enabled
+
 ## What Permissions IT Needs To Grant
 
 ### 1. Permission for the CI/CD Service Principal on Azure Storage
@@ -170,9 +207,9 @@ Please send the following values to the project team:
 |---|---|
 | Service Principal | Application (client) ID, Client secret Value, Directory (tenant) ID |
 | Entra admin group | Object ID |
-| Dev capacity | capacity ID |
-| Test capacity | capacity ID |
-| Prod capacity | capacity ID |
+| Dev capacity | capacity ID and capacity name |
+| Test capacity | capacity ID and capacity name |
+| Prod capacity | capacity ID and capacity name |
 | Azure subscription | Subscription ID |
 | Terraform state storage | actual storage naming if different from the default |
 
@@ -221,9 +258,11 @@ If a very short IT request is needed, this is the minimum ask:
    Dev, Test, Prod
 4. Create or provide Azure Blob Storage for Terraform state and provide:
    Subscription ID
-5. Grant the Service Principal:
+5. Add the Entra admin group and the CI/CD Service Principal as capacity administrators on the Fabric capacities
+6. Grant the Service Principal:
    `Storage Blob Data Contributor` on the Terraform state storage account
-6. Create GitHub Environments:
+7. Enable the required Fabric Admin Portal settings for workspace creation, public APIs, and Git integration
+8. Create GitHub Environments:
    `dev`, `test`, `prod`
-7. Optional only for feature workspaces:
+9. Optional only for feature workspaces:
    provide a feature capacity and a Fabric Git connection
