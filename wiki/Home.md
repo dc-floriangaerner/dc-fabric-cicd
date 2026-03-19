@@ -6,12 +6,13 @@ Use `README.md` for fast setup, then use these pages for details.
 ## Start Here
 
 1. [Setup Guide](Setup-Guide): complete first-time setup end-to-end.
-2. [Feature Workspace Lifecycle](Feature-Workspace-Lifecycle): optional branch-based ephemeral workspaces.
-3. [Workspace Configuration](Workspace-Configuration): understand `config.yml` and `parameter.yml`.
-4. [Deployment Workflow](Deployment-Workflow): exact behavior of GitHub workflows.
-5. [Troubleshooting](Troubleshooting): fix common failure modes.
-6. [FAQ](FAQ): concise answers to recurring questions.
-7. [Fabric CI/CD Options Comparison](Fabric-CICD-Options-Comparison): deep comparison of Fabric CI/CD tooling choices.
+2. [IT Admin Prerequisites](IT-Admin-Prerequisites): exact admin-side setup, IDs, permissions, and handoff checklist.
+3. [Feature Workspace Lifecycle](Feature-Workspace-Lifecycle): optional branch-based ephemeral workspaces.
+4. [Workspace Configuration](Workspace-Configuration): understand `config.yml` and `parameter.yml`.
+5. [Deployment Workflow](Deployment-Workflow): exact behavior of GitHub workflows.
+6. [Troubleshooting](Troubleshooting): fix common failure modes.
+7. [FAQ](FAQ): concise answers to recurring questions.
+8. [Fabric CI/CD Options Comparison](Fabric-CICD-Options-Comparison): deep comparison of Fabric CI/CD tooling choices.
 
 ## What This Repository Is
 
