@@ -8,19 +8,6 @@ It describes only:
 - what IT needs to provide to the project team
 - why each item is required
 
-## Name Mapping
-
-The project uses GitHub secret names.
-The Azure portal uses different labels.
-
-| Azure / Entra portal label | Project / GitHub secret name | Notes |
-|---|---|---|
-| Application (client) ID | `AZURE_CLIENT_ID` | from the App Registration / Service Principal |
-| Directory (tenant) ID | `AZURE_TENANT_ID` | tenant identifier in Microsoft Entra ID |
-| Client secret Value | `AZURE_CLIENT_SECRET` | use the secret value, not the secret ID |
-| Subscription ID | `ARM_SUBSCRIPTION_ID` | Azure subscription hosting the Terraform state storage |
-| Group Object ID | `entra_admin_group_object_id` | Object ID of the Entra admin security group |
-
 ## What IT Needs To Create
 
 ### 1. One CI/CD Service Principal
@@ -29,9 +16,9 @@ Please create one Microsoft Entra ID application / Service Principal for this so
 
 Please provide back to the project team:
 
-- Application (client) ID -> `AZURE_CLIENT_ID`
-- Client secret Value -> `AZURE_CLIENT_SECRET`
-- Directory (tenant) ID -> `AZURE_TENANT_ID`
+- Application (client) ID
+- Client secret Value
+- Directory (tenant) ID
 
 Why this is needed:
 
@@ -45,7 +32,7 @@ Please create one Entra ID security group for workspace administration.
 
 Please provide back to the project team:
 
-- the group Object ID as `entra_admin_group_object_id`
+- the group Object ID
 
 Why this is needed:
 
@@ -114,7 +101,7 @@ Current default naming in this repository:
 
 Please provide back to the project team:
 
-- the Azure subscription ID as `ARM_SUBSCRIPTION_ID`
+- the Azure subscription ID
 - confirmation of the storage account details if different from the defaults
 
 Why this is needed:
@@ -212,7 +199,7 @@ If a very short IT request is needed, this is the minimum ask:
 1. Create one Service Principal and provide:
    Application (client) ID, Client secret Value, Directory (tenant) ID
 2. Create one Entra admin group and provide:
-   `entra_admin_group_object_id`
+   Object ID
 3. Provide Fabric capacity IDs for:
    Dev, Test, Prod
 4. Create or provide Azure Blob Storage for Terraform state and provide:
@@ -223,3 +210,16 @@ If a very short IT request is needed, this is the minimum ask:
 7. Enable the required Fabric Admin Portal settings for workspace creation, public APIs, and Git integration
 8. Optional only for feature workspaces:
    provide a feature capacity and a Fabric Git connection
+
+## Name Mapping
+
+The project uses internal variable and secret names.
+The Azure portal uses different labels.
+
+| Azure / Entra portal label | Project / internal name | Notes |
+|---|---|---|
+| Application (client) ID | `AZURE_CLIENT_ID` | from the App Registration / Service Principal |
+| Directory (tenant) ID | `AZURE_TENANT_ID` | tenant identifier in Microsoft Entra ID |
+| Client secret Value | `AZURE_CLIENT_SECRET` | use the secret value, not the secret ID |
+| Subscription ID | `ARM_SUBSCRIPTION_ID` | Azure subscription hosting the Terraform state storage |
+| Group Object ID | `entra_admin_group_object_id` | Object ID of the Entra admin security group |
