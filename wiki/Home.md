@@ -6,7 +6,7 @@ Use `README.md` for fast setup, then use these pages for details.
 ## Start Here
 
 1. [Setup Guide](Setup-Guide): complete first-time setup end-to-end.
-2. [IT Admin Prerequisites](IT-Admin-Prerequisites): exact admin-side setup, IDs, permissions, and handoff checklist.
+2. [IT Admin Prerequisites for Fabric](IT-Admin-Prerequisites): exact admin-side setup, IDs, permissions, and handoff checklist.
 3. [Feature Workspace Lifecycle](Feature-Workspace-Lifecycle): optional branch-based ephemeral workspaces.
 4. [Workspace Configuration](Workspace-Configuration): understand `config.yml` and `parameter.yml`.
 5. [Deployment Workflow](Deployment-Workflow): exact behavior of GitHub workflows.
