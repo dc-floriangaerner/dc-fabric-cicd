@@ -156,7 +156,7 @@ Please send the following values to the project team:
 | Dev capacity | capacity ID and capacity name |
 | Test capacity | capacity ID and capacity name |
 | Prod capacity | capacity ID and capacity name |
-| Azure subscription | Subscription ID |
+| Azure subscription | Subscription ID of the subscription that contains the Terraform state storage account |
 | Terraform state storage | actual storage naming if different from the default |
 
 ## Optional Only: Feature Workspace Setup
