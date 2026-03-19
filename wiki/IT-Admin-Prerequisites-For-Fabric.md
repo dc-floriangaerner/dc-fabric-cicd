@@ -53,6 +53,11 @@ Why this is needed:
 - this gives named human administrators access independent of the CI/CD identity
 - this provides operational support and break-glass access when manual intervention is needed
 
+Note:
+
+- the `Admin` role assignment is applied automatically during provisioning
+- IT only needs to create the group and provide its Object ID
+
 ### 3. Fabric Capacity Assignment
 
 Please provide a Fabric capacity for each environment:
@@ -148,18 +153,7 @@ Why this is needed:
 
 - Terraform must be able to read and write its state file in Blob Storage
 
-### 2. Permission for the Entra ID Admin Group in Fabric
-
-Please ensure this Fabric role assignment:
-
-- `Admin` on each target Fabric workspace
-
-Why this is needed:
-
-- the admin group is the human administrative owner of the workspaces
-- this is needed for support, governance, and manual troubleshooting
-
-### 3. Tenant Allowance for the CI/CD Service Principal
+### 2. Tenant Allowance for the CI/CD Service Principal
 
 Please ensure the Service Principal is allowed to authenticate and be used for the required Microsoft Fabric automation.
 
